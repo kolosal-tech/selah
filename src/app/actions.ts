@@ -179,3 +179,101 @@ export async function reportPost(postId: string) {
     reason: "signalement utilisateur",
   });
 }
+
+// ── Phase 2 ────────────────────────────────────────────────────────────────
+
+export async function publishVideo(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const storagePath = String(formData.get("storage_path") ?? "");
+  // Le chemin doit être dans le dossier de l'utilisateur : même règle que la
+  // policy Storage, vérifiée ici aussi pour refuser tôt et clairement.
+  if (!storagePath.startsWith(`${user.id}/`)) return;
+  await supabase.from("videos").insert({
+    author_id: user.id,
+    storage_path: storagePath,
+    caption: String(formData.get("caption") ?? "").slice(0, 500),
+    verse_ref: String(formData.get("verse_ref") ?? "").slice(0, 80),
+    type: String(formData.get("type") ?? "temoignage"),
+    duration_s: Math.min(Number(formData.get("duration_s") ?? 0) || 0, 300),
+  });
+  await supabase.rpc("touch_streak");
+  revalidatePath("/videos");
+}
+
+export async function toggleVideoAmen(videoId: string) {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("video_amens")
+    .insert({ video_id: videoId, user_id: user.id });
+  if (error) {
+    await supabase
+      .from("video_amens")
+      .delete()
+      .match({ video_id: videoId, user_id: user.id });
+  }
+  revalidatePath("/videos");
+}
+
+export async function openPrayerRoom(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const title = String(formData.get("title") ?? "").trim();
+  if (title.length < 3) return;
+  const { data } = await supabase
+    .from("prayer_rooms")
+    .insert({
+      title: title.slice(0, 120),
+      topic: String(formData.get("topic") ?? "").slice(0, 200),
+      host_id: user.id,
+    })
+    .select("id")
+    .single();
+  revalidatePath("/rooms");
+  if (data) redirect(`/rooms/${data.id}`);
+}
+
+export async function closePrayerRoom(roomId: string) {
+  const { supabase, user } = await requireUser();
+  await supabase
+    .from("prayer_rooms")
+    .update({ closed_at: new Date().toISOString() })
+    .eq("id", roomId)
+    .eq("host_id", user.id);
+  revalidatePath("/rooms");
+}
+
+export async function createChallenge(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const title = String(formData.get("title") ?? "").trim();
+  const days = Number(formData.get("days") ?? 0);
+  if (title.length < 3 || !Number.isFinite(days) || days < 1 || days > 365) return;
+  await supabase.from("challenges").insert({
+    title: title.slice(0, 120),
+    description: String(formData.get("description") ?? "").slice(0, 1000),
+    days: Math.trunc(days),
+    starts_on: String(formData.get("starts_on") ?? "") || new Date().toISOString().slice(0, 10),
+    created_by: user.id,
+  });
+  revalidatePath("/challenges");
+}
+
+export async function checkInChallenge(challengeId: string) {
+  const { supabase, user } = await requireUser();
+  // Doublon du jour : la clé primaire (défi, membre, jour) le refuse. C'est
+  // l'effet voulu — on pointe une fois par jour.
+  await supabase
+    .from("challenge_checkins")
+    .insert({ challenge_id: challengeId, user_id: user.id });
+  await supabase.rpc("touch_streak");
+  revalidatePath("/challenges");
+}
+
+export async function joinChurch(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const churchId = String(formData.get("church_id") ?? "");
+  await supabase
+    .from("profiles")
+    .update({ church_id: churchId || null })
+    .eq("id", user.id);
+  revalidatePath("/churches");
+  revalidatePath("/pastor");
+}

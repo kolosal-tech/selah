@@ -6,10 +6,18 @@ import { logout } from "@/app/actions";
 
 const NAV = [
   ["/feed", "Fil"],
+  ["/videos", "Vidéos"],
   ["/prayer", "Prière"],
-  ["/map", "Carte"],
-  ["/mentorship", "Mentorat"],
-  ["/churches", "Églises"],
+  ["/rooms", "Direct"],
+  ["/challenges", "Défis"],
+] as const;
+
+const NAV_PLUS = [
+  ["/map", "Carte d'intercession"],
+  ["/mentorship", "Paul & Timothée"],
+  ["/churches", "Annuaire des églises"],
+  ["/pastor", "Dashboard pasteur"],
+  ["/sabbath", "Mode Sabbat 🕊️"],
 ] as const;
 
 export default async function AppLayout({
@@ -46,6 +54,19 @@ export default async function AppLayout({
         </div>
       </header>
       {children}
+
+      <div className="mt-10 flex flex-wrap gap-2 border-t border-amber-200 pt-4 text-sm">
+        {NAV_PLUS.map(([href, label]) => (
+          <Link
+            key={href}
+            href={href}
+            className="rounded-full border border-amber-200 px-3 py-1 text-stone-600 hover:bg-amber-100 hover:text-amber-800"
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+
       <nav className="fixed inset-x-0 bottom-0 border-t border-amber-200 bg-white">
         <div className="mx-auto flex max-w-2xl justify-around py-2 text-sm">
           {NAV.map(([href, label]) => (
@@ -57,13 +78,6 @@ export default async function AppLayout({
               {label}
             </Link>
           ))}
-          <Link
-            href="/sabbath"
-            className="rounded px-3 py-1 text-stone-600 hover:bg-amber-100"
-            title="Mode Sabbat"
-          >
-            🕊️
-          </Link>
         </div>
       </nav>
     </div>
