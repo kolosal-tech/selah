@@ -13,7 +13,7 @@ export default async function Feed() {
   const supabase = await supabaseServer();
   const { data: posts } = await supabase
     .from("posts")
-    .select("*, profiles(username, display_name)")
+    .select("*, profiles!posts_author_id_fkey(username, display_name)")
     .order("created_at", { ascending: false })
     .limit(50);
 
