@@ -26,16 +26,15 @@ export async function signup(formData: FormData) {
     redirect("/signup?error=username");
   }
   const supabase = await supabaseServer();
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { username, country } },
+  });
   if (error || !data.user)
     redirect(`/signup?error=${encodeURIComponent(error?.message ?? "inconnu")}`);
-  const { error: pErr } = await supabase.from("profiles").insert({
-    id: data.user.id,
-    username,
-    display_name: username,
-    country,
-  });
-  if (pErr) redirect(`/signup?error=${encodeURIComponent(pErr.message)}`);
+  // Le profil est créé par le trigger handle_new_user (avec ou sans confirmation email).
+  if (!data.session) redirect("/login?info=confirm");
   redirect("/feed");
 }
 
@@ -67,7 +66,7 @@ export async function createPost(formData: FormData) {
     body: body.slice(0, 4000),
     verse_ref: verse.slice(0, 80),
   });
-  await supabase.rpc("touch_streak", { uid: user.id });
+  await supabase.rpc("touch_streak");
   revalidatePath("/feed");
 }
 
@@ -125,7 +124,7 @@ export async function prayNow(requestId: string) {
     user_id: user.id,
     country: profile?.country ?? "FR",
   });
-  await supabase.rpc("touch_streak", { uid: user.id });
+  await supabase.rpc("touch_streak");
   revalidatePath("/prayer");
   revalidatePath("/map");
 }

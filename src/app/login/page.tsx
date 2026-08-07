@@ -4,14 +4,20 @@ import { login } from "@/app/actions";
 export default async function Login({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; info?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, info } = await searchParams;
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
       <h1 className="text-3xl font-bold text-stone-900">Bon retour 🙏</h1>
       {error && (
         <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
+      )}
+      {info === "confirm" && (
+        <p className="rounded-lg bg-amber-100 p-3 text-sm text-amber-800">
+          Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse, puis
+          connecte-toi.
+        </p>
       )}
       <form action={login} className="flex flex-col gap-3">
         <input
