@@ -1,56 +1,84 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
+import { supabaseServer } from "@/lib/supabase/server";
+import { isSabbathActive } from "@/lib/sabbath";
+import { VerticalFeed, type FeedVideo } from "./vertical-feed";
 
-const piliers = [
-  ["🙏", "Prière au centre", "« Je prie pour toi maintenant » : un clic, un compteur mondial, une communion réelle."],
-  ["🔥", "Témoignages", "Récits qui bouleversent, exhortations et enseignements courts."],
-  ["🌍", "Sans barrière de langue", "Carte d'intercession mondiale, communion entre continents."],
-  ["🕊️", "Mode Sabbat", "24 h de déconnexion volontaire pour te consacrer à Dieu hors ligne."],
-];
+/**
+ * Page d'accueil = feed vidéo vertical plein écran, connecté ou non.
+ * Les visiteurs regardent librement (vue `videos_feed`, lecture seule) ;
+ * créer un compte n'est demandé que pour interagir (amen, publier).
+ */
+export default async function Accueil({
+  searchParams,
+}: {
+  searchParams: Promise<{ v?: string }>;
+}) {
+  const { v: videoPartagee } = await searchParams;
+  const supabase = await supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default function Landing() {
+  let me: { id: string; username: string | null } | null = null;
+  let amened: string[] = [];
+  let prie: string[] = [];
+  let suivis: string[] = [];
+  if (user) {
+    const [{ data: profile }, { data: amens }, { data: prayers }, { data: follows }] =
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .select("username, sabbath_until")
+          .eq("id", user.id)
+          .single(),
+        supabase.from("video_amens").select("video_id").eq("user_id", user.id),
+        supabase.from("video_prayers").select("video_id").eq("user_id", user.id),
+        supabase.from("follows").select("followed_id").eq("follower_id", user.id),
+      ]);
+    // Le Mode Sabbat vaut aussi pour le feed : la promesse de déconnexion
+    // n'aurait aucun sens si la page la plus addictive restait ouverte.
+    if (isSabbathActive(profile?.sabbath_until)) redirect("/sabbath");
+    me = { id: user.id, username: profile?.username ?? null };
+    amened = (amens ?? []).map((a) => a.video_id);
+    prie = (prayers ?? []).map((p) => p.video_id);
+    suivis = (follows ?? []).map((f) => f.followed_id);
+  }
+
+  // Classement « édifiant » : la vue calcule score (engagement pondéré,
+  // amorti par l'âge) et rang_auteur (diversité — pas d'empilement d'un
+  // même auteur en tête). Tri (rang_auteur, score desc) = feed intercalé.
+  const { data: videos, error } = await supabase
+    .from("videos_feed")
+    .select("*")
+    .order("rang_auteur", { ascending: true })
+    .order("score", { ascending: false })
+    .limit(24);
+
+  let liste = (videos ?? []) as FeedVideo[];
+
+  // Lien de partage /?v=<id> : la vidéo visée passe en tête du feed.
+  if (videoPartagee && /^[0-9a-f-]{36}$/i.test(videoPartagee)) {
+    const dejaLa = liste.find((x) => x.id === videoPartagee);
+    if (dejaLa) {
+      liste = [dejaLa, ...liste.filter((x) => x.id !== videoPartagee)];
+    } else {
+      const { data: cible } = await supabase
+        .from("videos_feed")
+        .select("*")
+        .eq("id", videoPartagee)
+        .maybeSingle();
+      if (cible) liste = [cible as FeedVideo, ...liste];
+    }
+  }
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-10 px-6 py-16 text-center">
-      <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-amber-600">
-          Réveil mondial
-        </p>
-        <h1 className="mt-3 text-6xl font-bold tracking-tight text-stone-900">
-          Selah
-        </h1>
-        <p className="mt-4 text-lg text-stone-600">
-          Pause. Médite. Puis rejoins l&apos;Église mondiale qui prie, témoigne
-          et adore — ensemble, en temps réel.
-        </p>
-      </div>
-      <div className="grid w-full gap-4 sm:grid-cols-2">
-        {piliers.map(([icon, titre, texte]) => (
-          <div
-            key={titre}
-            className="rounded-2xl border border-amber-200 bg-white p-5 text-left shadow-sm"
-          >
-            <div className="text-2xl">{icon}</div>
-            <h2 className="mt-2 font-semibold text-stone-900">{titre}</h2>
-            <p className="mt-1 text-sm text-stone-600">{texte}</p>
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-4">
-        <Link
-          href="/signup"
-          className="rounded-full bg-amber-600 px-8 py-3 font-semibold text-white shadow hover:bg-amber-700"
-        >
-          Rejoindre le Réveil
-        </Link>
-        <Link
-          href="/login"
-          className="rounded-full border border-amber-600 px-8 py-3 font-semibold text-amber-700 hover:bg-amber-100"
-        >
-          Se connecter
-        </Link>
-      </div>
-      <p className="text-xs text-stone-400">
-        « Que tout ce qui respire loue l&apos;Éternel ! » — Psaume 150:6
-      </p>
-    </main>
+    <VerticalFeed
+      initialVideos={liste}
+      me={me}
+      initialAmened={amened}
+      initialPrie={prie}
+      initialSuivis={suivis}
+      erreurInitiale={Boolean(error)}
+    />
   );
 }

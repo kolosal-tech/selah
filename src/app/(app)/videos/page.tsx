@@ -1,82 +1,71 @@
+import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
-import { toggleVideoAmen } from "@/app/actions";
 import { UploadForm } from "./upload-form";
+import { Clapperboard, Play } from "lucide-react";
 
-const TYPE_LABEL: Record<string, string> = {
-  temoignage: "🔥 Témoignage",
-  exhortation: "💬 Exhortation",
-  priere: "🙏 Prière",
-  enseignement: "📖 Enseignement",
-  louange: "🎵 Louange",
-};
-
-export default async function Videos() {
+/** Le feed vidéo vit en plein écran sur la page d'accueil `/`.
+ *  Ici : le studio de publication, et la liste de ses propres vidéos. */
+export default async function PublierVideo() {
   const supabase = await supabaseServer();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: videos } = await supabase
+  const { data: miennes } = await supabase
     .from("videos")
-    .select("*, profiles!videos_author_id_fkey(username)")
+    .select("id, caption, type, amen_count, pray_count, comment_count, hidden, created_at")
+    .eq("author_id", user!.id)
     .order("created_at", { ascending: false })
-    .limit(30);
-
-  const base = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/`;
+    .limit(20);
 
   return (
-    <main className="flex flex-col gap-6">
+    <main className="flex flex-col gap-8 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-stone-900">Témoignages en vidéo</h1>
-        <p className="text-stone-600">
+        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
+          <Clapperboard className="h-4 w-4" />
+          <span>Studio</span>
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
+          Publier une vidéo
+        </h1>
+        <p className="mt-1 text-sm text-white/60">
           Une minute pour raconter ce que Dieu a fait. Vertical, court, vrai.
         </p>
+        <Link
+          href="/"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-300 hover:text-amber-200"
+        >
+          <Play className="h-3.5 w-3.5 fill-amber-300" />
+          <span>Voir le feed</span>
+        </Link>
       </div>
 
-      {user && <UploadForm userId={user.id} />}
+      <UploadForm userId={user!.id} />
 
-      <div className="flex snap-y snap-mandatory flex-col gap-4">
-        {(videos ?? []).map((v) => (
-          <article
-            key={v.id}
-            className="snap-start overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-sm"
-          >
-            <video
-              src={base + v.storage_path}
-              controls
-              playsInline
-              preload="metadata"
-              className="aspect-[9/16] w-full bg-black object-contain"
-            />
-            <div className="p-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-semibold text-stone-900">
-                  @{v.profiles?.username ?? "inconnu"}
+      {(miennes ?? []).length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-bold text-white">Mes vidéos</h2>
+          <ul className="flex flex-col gap-2">
+            {(miennes ?? []).map((v) => (
+              <li key={v.id} className="glass-card flex items-center justify-between px-4 py-3 text-sm">
+                <span className="min-w-0 truncate text-white/85">
+                  {v.caption || "(sans légende)"}
+                  {v.hidden && (
+                    <span className="ml-2 rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold text-rose-300">
+                      masquée
+                    </span>
+                  )}
                 </span>
-                <span className="text-amber-700">{TYPE_LABEL[v.type]}</span>
-              </div>
-              {v.caption && (
-                <p className="mt-2 whitespace-pre-wrap text-stone-800">{v.caption}</p>
-              )}
-              {v.verse_ref && (
-                <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm italic text-amber-800">
-                  📖 {v.verse_ref}
-                </p>
-              )}
-              <form action={toggleVideoAmen.bind(null, v.id)} className="mt-3">
-                <button className="rounded-full px-3 py-1 text-sm text-stone-500 hover:bg-amber-100">
-                  🙌 Amen · {v.amen_count}
-                </button>
-              </form>
-            </div>
-          </article>
-        ))}
-        {(videos ?? []).length === 0 && (
-          <p className="text-center text-stone-400">
-            Aucune vidéo encore. Sois le premier à témoigner en face caméra. 🎥
-          </p>
-        )}
-      </div>
+                <span className="ml-3 flex shrink-0 items-center gap-3 text-white/60">
+                  <span>❤️ {v.amen_count}</span>
+                  <span>🙏 {v.pray_count}</span>
+                  <span>💬 {v.comment_count}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }

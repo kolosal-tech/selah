@@ -40,3 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# Comptes de test QA (mots de passe en clair) — ne jamais committer
+docs/COMPTES-TEST.md
+
+# Config locale outillage
+.claude/

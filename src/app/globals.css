@@ -1,18 +1,185 @@
 @import "tailwindcss";
 
-/*
- * Selah assume une palette CLAIRE (ambre, crème, pierre) : c'est le parti pris
- * visuel — lumière, chaleur, paix. Le squelette de create-next-app posait un
- * `body { background: var(--background) }` hors couche CSS, qui l'emportait donc
- * sur les utilitaires Tailwind, et basculait le fond en #0a0a0a dès que le
- * système était en thème sombre : fond noir avec du texte `stone-800`, page
- * illisible. Le thème est donc déclaré explicitement clair, et le fond est
- * laissé aux classes utilitaires du layout.
- */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --font-sans: var(--font-geist-sans);
+body {
+  min-height: 100vh;
+  /* Fond sombre neutre : la lumière vient du composant FondParadis
+     (radial-gradient + halos), jamais d'un aplat vert opaque. */
+  background-color: #020617;
+  color: #ffffff;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
 }
+
+/* Glassmorphic utilities & animations — verre léger et aérien */
+.glass-card {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  border-radius: 1.5rem;
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-card-hover:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(16, 185, 129, 0.15);
+}
+
+.glass-pill {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: white;
+  transition: all 0.2s ease;
+}
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(251, 191, 36, 0.5);
+  outline: none;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+}
+
+.text-gradient-gold {
+  /* Dégradé lumineux des maquettes : ambre → rose → cyan pastel */
+  background: linear-gradient(90deg, #fde68a 0%, #fda4af 50%, #a5f3fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-paradise {
+  background: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-gradient-gold-coral {
+  background: linear-gradient(90deg, #fbbf24 0%, #f43f5e 50%, #2dd4bf 100%);
+}
+
+/* Bouton d'action principal : gradient lumineux, glow doré, texte sombre */
+.btn-paradise {
+  background: linear-gradient(90deg, #fbbf24 0%, #f43f5e 50%, #2dd4bf 100%);
+  color: #020617;
+  font-weight: 600;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+  transition: all 0.3s ease;
+}
+.btn-paradise:hover {
+  box-shadow: 0 0 28px rgba(251, 191, 36, 0.5);
+}
+
+.bg-gradient-gold-turquoise {
+  background: linear-gradient(135deg, #f59e0b 0%, #14b8a6 100%);
+}
+
+/* Soundwave animations for Upper Room */
+@keyframes soundWave {
+  0%, 100% { height: 6px; }
+  50% { height: 28px; }
+}
+
+.animate-soundwave-1 { animation: soundWave 1.2s ease-in-out infinite; }
+.animate-soundwave-2 { animation: soundWave 0.8s ease-in-out infinite 0.2s; }
+.animate-soundwave-3 { animation: soundWave 1.5s ease-in-out infinite 0.4s; }
+.animate-soundwave-4 { animation: soundWave 1s ease-in-out infinite 0.1s; }
+
+/* Golden Halo Ripple Effect */
+@keyframes haloPulse {
+  0% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+  70% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 25px 10px rgba(245, 158, 11, 0.4); }
+  100% { transform: scale(1); opacity: 0.9; box-shadow: 0 0 10px 2px rgba(245, 158, 11, 0.6); }
+}
+
+.prayer-halo {
+  animation: haloPulse 2s ease-in-out infinite;
+}
+
+/* ── Cinétique « Reels » ─────────────────────────────────────────────── */
+
+/* Apparition douce du contenu (pages internes, overlays du feed) */
+@keyframes arrive {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-arrive {
+  animation: arrive 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Burst de cœur au double-tap (signature TikTok) */
+@keyframes coeur-burst {
+  0%   { opacity: 0; transform: scale(0.4) rotate(-8deg); }
+  35%  { opacity: 1; transform: scale(1.25) rotate(4deg); }
+  60%  { transform: scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: scale(1.4) translateY(-30px); }
+}
+.animate-coeur-burst {
+  animation: coeur-burst 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Panneau commentaires : glisse depuis le bas */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-sheet-up {
+  animation: sheet-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Toast : tombe du haut en fondu */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-toast-in {
+  animation: toast-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Micro-interaction générique des boutons du rail */
+.tap-bounce {
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tap-bounce:active {
+  transform: scale(0.88);
+}
+
+/* Respect du réglage système « réduire les animations » */
+@media (prefers-reduced-motion: reduce) {
+  .animate-arrive,
+  .animate-coeur-burst,
+  .animate-sheet-up,
+  .animate-toast-in,
+  .prayer-halo {
+    animation: none;
+  }
+  .tap-bounce:active {
+    transform: none;
+  }
+}
+
+/* Hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

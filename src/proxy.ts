@@ -6,6 +6,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // justement quand la session ne peut pas être vérifiée.
 const PUBLIC_PATHS = [
   "/",
+  "/decouvrir",
   "/login",
   "/signup",
   "/manifest.json",
@@ -48,5 +49,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|ico|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|ico|webp|mp4|webm)$).*)"],
 };
