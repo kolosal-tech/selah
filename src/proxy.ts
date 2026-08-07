@@ -1,7 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/manifest.json"];
+// `/sw.js` et `/hors-ligne` DOIVENT rester publics : le navigateur récupère le
+// service worker sans cookie applicatif, et la page de repli doit s'afficher
+// justement quand la session ne peut pas être vérifiée.
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/signup",
+  "/manifest.json",
+  "/sw.js",
+  "/hors-ligne",
+];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

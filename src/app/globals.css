@@ -1,26 +1,18 @@
 @import "tailwindcss";
 
+/*
+ * Selah assume une palette CLAIRE (ambre, crème, pierre) : c'est le parti pris
+ * visuel — lumière, chaleur, paix. Le squelette de create-next-app posait un
+ * `body { background: var(--background) }` hors couche CSS, qui l'emportait donc
+ * sur les utilitaires Tailwind, et basculait le fond en #0a0a0a dès que le
+ * système était en thème sombre : fond noir avec du texte `stone-800`, page
+ * illisible. Le thème est donc déclaré explicitement clair, et le fond est
+ * laissé aux classes utilitaires du layout.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
