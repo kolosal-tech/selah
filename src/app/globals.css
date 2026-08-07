@@ -183,3 +183,36 @@ body {
   scrollbar-width: none;
 }
 
+
+/* Rail d'actions du feed — colonne de verre unique (maquettes) */
+.rail-verre {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* Pastille « EN DIRECT » débordant le coin de la carte (Upper Room) */
+.pastille-direct {
+  position: absolute;
+  top: -11px;
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #f43f5e;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.45);
+}
+
+/* Halo doré des intervenants d'une salle */
+.halo-orateur {
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 26px rgba(245, 158, 11, 0.55);
+}

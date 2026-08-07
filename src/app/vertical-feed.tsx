@@ -501,9 +501,8 @@ export function VerticalFeed({
     <div className="fixed inset-0 overflow-hidden bg-black text-white">
       {/* Barre haute */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent px-5 pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <Link href="/" className="pointer-events-auto flex items-center gap-2">
-          <Sparkles className="h-6 w-6 animate-pulse text-amber-400" />
-          <span className="text-gradient-gold text-2xl font-bold tracking-tight drop-shadow-md">
+        <Link href="/" className="pointer-events-auto flex items-center">
+          <span className="text-[28px] font-extrabold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
             Selah
           </span>
         </Link>
@@ -631,43 +630,49 @@ export function VerticalFeed({
                     i === active ? "animate-arrive" : ""
                   }`}
                 >
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div>
+                    <h3 className="text-[18px] font-bold tracking-tight text-white drop-shadow-md">
+                      @{v.username ?? "disciple"} ✨
+                    </h3>
+                    {v.caption && (
+                      <p className="mt-1.5 line-clamp-3 text-[17px] leading-snug text-white drop-shadow">
+                        {v.caption}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2.5">
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r ${typeBadge.bg} px-3 py-1 text-xs font-semibold text-white shadow-lg`}
+                      className={`inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r ${typeBadge.bg} px-3 py-1.5 text-[13px] font-semibold text-white shadow-lg`}
                     >
-                      <BadgeIcon className="h-3.5 w-3.5" />
+                      <BadgeIcon className="h-4 w-4" />
                       <span>{typeBadge.label}</span>
                     </span>
                     {v.verse_ref && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-medium text-amber-200 backdrop-blur-xl">
-                        <BookOpen className="h-3.5 w-3.5 text-amber-400" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-[13px] font-semibold text-white shadow-lg">
+                        <BookOpen className="h-4 w-4" />
                         <span>{v.verse_ref}</span>
                       </span>
                     )}
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold tracking-tight text-white drop-shadow-md">
-                      @{v.username ?? "disciple"}
-                    </h3>
-                    {v.caption && (
-                      <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-white/95 drop-shadow">
-                        {v.caption}
-                      </p>
-                    )}
+                  <div className="flex w-[calc(100%+4.5rem)] items-center gap-2.5 rounded-2xl border border-white/15 bg-white/[0.14] px-3.5 py-2.5 backdrop-blur-xl">
+                    <Music2 className="h-4 w-4 shrink-0 text-amber-200" />
+                    <span className="truncate text-sm text-white/95">
+                      Son original — @{v.username ?? "disciple"}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Rail d'actions droit */}
               <div
-                className={`absolute bottom-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] right-3 z-20 flex flex-col items-center gap-4 ${
+                className={`rail-verre absolute bottom-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] right-3 z-20 flex w-[74px] flex-col items-center gap-5 rounded-[40px] py-4 ${
                   i === active ? "animate-arrive" : ""
                 }`}
               >
                 {/* Avatar + Suivre */}
                 <div className="relative mb-1">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-amber-500 to-emerald-400 p-[2px] shadow-lg shadow-emerald-500/20">
-                    <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-amber-300">
+                  <div className="h-[54px] w-[54px] rounded-full bg-gradient-to-tr from-teal-400 to-cyan-200 p-[2px] shadow-[0_0_18px_rgba(45,212,191,0.55)]">
+                    <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-900 text-base font-bold text-amber-300">
                       {(v.username || "S")[0].toUpperCase()}
                     </span>
                   </div>
@@ -675,7 +680,7 @@ export function VerticalFeed({
                     <button
                       onClick={() => suivre(v)}
                       aria-label={suit ? `Ne plus suivre @${v.username}` : `Suivre @${v.username}`}
-                      className={`absolute -bottom-1.5 left-1/2 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full text-white shadow-md transition hover:scale-110 ${
+                      className={`absolute -bottom-2 left-1/2 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full text-white shadow-md transition hover:scale-110 ${
                         suit ? "bg-emerald-500" : "bg-rose-500"
                       }`}
                     >
@@ -694,22 +699,16 @@ export function VerticalFeed({
                   aria-label="Dire amen"
                   className="group flex flex-col items-center"
                 >
-                  <span
-                    className={`tap-bounce flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur-2xl transition-all duration-300 ${
-                      aAmen
-                        ? "scale-110 border-rose-500/50 bg-rose-500/30 text-rose-500"
-                        : "border-white/20 bg-white/10 text-white group-hover:bg-white/20"
-                    }`}
-                  >
+                  <span className="tap-bounce flex items-center justify-center transition-all duration-300">
                     <Heart
-                      className={`h-6 w-6 transition-transform ${
+                      className={`h-10 w-10 transition-transform ${
                         aAmen
-                          ? "fill-rose-500 text-rose-500 drop-shadow-[0_0_12px_rgba(244,63,94,0.8)]"
-                          : ""
+                          ? "scale-110 fill-rose-500 text-rose-500 drop-shadow-[0_0_14px_rgba(244,63,94,0.85)]"
+                          : "fill-rose-400/90 text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.55)]"
                       }`}
                     />
                   </span>
-                  <span className="mt-1 text-xs font-semibold drop-shadow">
+                  <span className="mt-1 text-[15px] font-bold drop-shadow">
                     {formatCompte(nbAmen(v))}
                   </span>
                 </button>
@@ -724,15 +723,15 @@ export function VerticalFeed({
                     <span className="prayer-halo absolute -inset-2 rounded-full bg-amber-400/40 blur-md" />
                   )}
                   <span
-                    className={`tap-bounce relative flex h-14 w-14 items-center justify-center rounded-full border backdrop-blur-2xl transition-all duration-300 ${
+                    className={`tap-bounce relative flex h-16 w-16 items-center justify-center rounded-full transition-all duration-300 ${
                       aPrie
-                        ? "scale-110 border-amber-400 bg-amber-500/40 shadow-[0_0_25px_rgba(245,158,11,0.6)]"
-                        : "border-white/20 bg-white/10 group-hover:bg-white/20"
+                        ? "scale-105 border border-amber-400 bg-amber-500/35 shadow-[0_0_28px_8px_rgba(245,158,11,0.45)]"
+                        : ""
                     }`}
                   >
-                    <span className="text-2xl drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">🙏</span>
+                    <span className="text-[34px] leading-none drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]">🙏</span>
                   </span>
-                  <span className="mt-1 text-xs font-bold text-amber-300 drop-shadow">
+                  <span className="mt-1 text-[15px] font-bold text-amber-300 drop-shadow">
                     {formatCompte(nbPrieres(v))}
                   </span>
                 </button>
@@ -743,10 +742,10 @@ export function VerticalFeed({
                   aria-label="Voir les commentaires"
                   className="group flex flex-col items-center"
                 >
-                  <span className="tap-bounce flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-2xl transition group-hover:bg-white/20">
-                    <MessageCircle className="h-6 w-6" />
+                  <span className="tap-bounce flex items-center justify-center text-white transition">
+                    <MessageCircle className="h-9 w-9" />
                   </span>
-                  <span className="mt-1 text-xs font-semibold drop-shadow">
+                  <span className="mt-1 text-[15px] font-bold drop-shadow">
                     {formatCompte(nbCommentaires(v))}
                   </span>
                 </button>
@@ -757,10 +756,10 @@ export function VerticalFeed({
                   aria-label="Partager"
                   className="group flex flex-col items-center"
                 >
-                  <span className="tap-bounce flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-2xl transition group-hover:bg-white/20">
-                    <Share2 className="h-5 w-5" />
+                  <span className="tap-bounce flex items-center justify-center text-white transition">
+                    <Share2 className="h-9 w-9" />
                   </span>
-                  <span className="mt-1 text-xs font-medium drop-shadow">
+                  <span className="mt-1 text-[11px] font-medium text-white/70 drop-shadow">
                     {partage === v.id ? "Copié !" : "Partager"}
                   </span>
                 </button>
@@ -822,14 +821,15 @@ export function VerticalFeed({
             className="animate-sheet-up relative flex max-h-[70vh] w-full flex-col rounded-t-3xl border-t border-white/20 bg-slate-900/90 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 shadow-2xl backdrop-blur-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <span className="text-sm font-bold text-white/90">
+            <span className="mx-auto mb-3 h-1 w-11 rounded-full bg-white/35" />
+            <div className="relative flex items-center justify-center border-b border-white/10 pb-3">
+              <span className="text-[17px] font-bold text-white">
                 Commentaires ({formatCompte(nbCommentaires(ouverte))})
               </span>
               <button
                 onClick={() => setOuverte(null)}
                 aria-label="Fermer les commentaires"
-                className="rounded-full bg-white/10 p-1.5 text-white/70 hover:text-white"
+                className="absolute right-0 rounded-full bg-white/10 p-1.5 text-white/70 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
