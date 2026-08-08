@@ -260,14 +260,20 @@ export function VerticalFeed({
         if (locale !== "fr") {
           const { data: traductions } = await supabaseBrowser()
             .from("video_translations")
-            .select("video_id, caption, verse_ref")
+            .select("video_id, caption, verse_ref, storage_path, thumb_path")
             .eq("lang", locale)
             .in("video_id", nouvelles.map((v) => v.id));
           const parId = new Map((traductions ?? []).map((t) => [t.video_id, t]));
           nouvelles = nouvelles.map((v) => {
             const t = parId.get(v.id);
             return t
-              ? { ...v, caption: t.caption ?? v.caption, verse_ref: t.verse_ref ?? v.verse_ref }
+              ? {
+                  ...v,
+                  caption: t.caption ?? v.caption,
+                  verse_ref: t.verse_ref ?? v.verse_ref,
+                  storage_path: t.storage_path ?? v.storage_path,
+                  thumb_path: t.thumb_path ?? v.thumb_path,
+                }
               : v;
           });
         }
