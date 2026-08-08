@@ -65,8 +65,11 @@ Détail de la chaîne : `scripts/doublage/README.md`.
 ## Vérifier soi-même
 
 ```bash
-# La langue suit le pays : en-tête de géolocalisation simulé
-curl -sI https://selah-wheat.vercel.app/ -H "x-vercel-ip-country: KR" | grep -i set-cookie
+# La langue suit le pays d'où part la requête. Vercel calcule lui-même
+# `x-vercel-ip-country` et écrase toute valeur qu'on tenterait d'injecter :
+# depuis la France ce cookie vaut « fr », et c'est bien la preuve que la
+# géolocalisation s'applique — pas un en-tête qu'on se serait raconté.
+curl -sI https://selah-wheat.vercel.app/ | grep -i set-cookie
 
 # L'interface et le sens d'écriture suivent le cookie
 curl -s https://selah-wheat.vercel.app/decouvrir -H "Cookie: selah-locale=ar" | grep -o '<html[^>]*'
