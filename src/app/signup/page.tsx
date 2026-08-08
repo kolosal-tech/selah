@@ -30,13 +30,23 @@ export default async function Signup({
         </p>
       )}
       <form action={signup} className="flex flex-col gap-3">
-        <input
-          name="username"
-          required
-          placeholder="Nom d'utilisateur"
-          pattern="[a-zA-Z0-9_]{3,30}"
-          className="glass-input rounded-xl p-3 placeholder:text-white/40"
-        />
+        {/* `title` est indispensable : sans lui, le navigateur refuse le champ
+            avec son message générique « Veuillez respecter le format demandé »,
+            qui ne dit jamais quels caractères sont acceptés. */}
+        <div className="flex flex-col gap-1">
+          <input
+            name="username"
+            required
+            placeholder="Nom d'utilisateur"
+            pattern="[a-zA-Z0-9_]{3,30}"
+            title="3 à 30 caractères : lettres, chiffres et tiret bas (_) uniquement. Ni point, ni tiret, ni espace."
+            className="glass-input rounded-xl p-3 placeholder:text-white/40"
+          />
+          <p className="px-1 text-xs text-white/45">
+            Lettres, chiffres et <code className="text-white/70">_</code> — ni point,
+            ni tiret, ni espace. Exemple : <code className="text-white/70">selah_lumiere</code>
+          </p>
+        </div>
         <input
           name="email"
           type="email"
