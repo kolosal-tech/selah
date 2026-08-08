@@ -168,7 +168,7 @@ def main() -> None:
     ref_fr = {u: v["verset_fr"] for u, v in fr.items()}
     voix_dir, sortie, travail = (pathlib.Path(a.voix), pathlib.Path(a.sortie),
                                  pathlib.Path(a.travail))
-    langues = a.langues or ["en", "es", "pt", "it", "de", "ru", "ar", "zh", "ja", "ko"]
+    langues = a.langues or ["fr", "en", "es", "pt", "it", "de", "ru", "ar", "zh", "ja", "ko"]
 
     for lang in langues:
         textes = json.load(open(ICI / "lang" / f"{lang}.json"))

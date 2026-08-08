@@ -20,7 +20,7 @@ import urllib.request
 
 ICI = pathlib.Path(__file__).parent
 SORTIE = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else ICI / "voix")
-LANGUES = ["en", "es", "pt", "it", "de", "ru", "ar", "zh", "ja", "ko"]
+LANGUES = ["fr", "en", "es", "pt", "it", "de", "ru", "ar", "zh", "ja", "ko"]
 CJC = {"zh", "ja", "ko"}
 
 # Deux voix, en alternance selon l'unité — c'est l'alternance des
