@@ -66,6 +66,23 @@ def corps_pour(texte: str, lang: str) -> int:
     return 58
 
 
+def typographier(texte: str, lang: str) -> str:
+    """Espaces insécables là où une coupure serait fautive.
+
+    Constaté à l'écran : « Je suis la lumière du monde. » se coupait avant
+    le guillemet fermant, qui se retrouvait seul sur sa ligne. En
+    typographie française l'espace qui précède un signe double est fine et
+    insécable — U+202F fait les deux à la fois.
+    """
+    if lang not in ("fr", "ru"):
+        return texte
+    fine = "\u202f"  # espace fine insécable
+    for signe in ("»", "!", "?", ":", ";"):
+        texte = texte.replace(" " + signe, fine + signe)
+    texte = texte.replace("« ", "«" + fine)
+    return texte
+
+
 def _rendre(html_corps: str, sortie: pathlib.Path, hauteur_max: int = 900) -> None:
     """Rend un fragment HTML en PNG transparent, rogné à l'encre."""
     sortie.parent.mkdir(parents=True, exist_ok=True)
@@ -104,6 +121,7 @@ def _rendre(html_corps: str, sortie: pathlib.Path, hauteur_max: int = 900) -> No
 def planche_verset(verset: str, reference: str, sortie: pathlib.Path,
                    lang: str) -> None:
     """Verset en blanc, référence dorée en dessous, un seul PNG."""
+    verset = typographier(verset, lang)
     corps = corps_pour(verset, lang)
     dir_attr = ' dir="rtl"' if lang in RTL else ""
     corps_html = f"""
@@ -118,6 +136,7 @@ def planche_verset(verset: str, reference: str, sortie: pathlib.Path,
 
 
 def planche_cloture(texte: str, sortie: pathlib.Path, lang: str) -> None:
+    texte = typographier(texte, lang)
     corps = 48 if lang in ("zh", "ja", "ko") else 44 if lang == "ar" else 54
     dir_attr = ' dir="rtl"' if lang in RTL else ""
     corps_html = f"""

@@ -1,0 +1,64 @@
+{
+ "_note": "Série « Respire » : le verset seul, lu lentement, sur un fond peint par le montage et une musique composée pour Selah. Pas de photo, pas d'exhortation — une respiration entre deux vidéos du fil. Durée visée : 18 à 24 secondes.",
+ "_musique": "Trois pièces originales (aurore, veille, clarté) composées avec ElevenLabs, alternées d'une unité à l'autre.",
+ "19": {
+  "musique": "aurore",
+  "teinte": ["0x0b1220", "0x134e4a", "0x1e3a5f"],
+  "type": "priere",
+  "verset_fr": "Lamentations 3:23",
+  "verset": "« Les compassions de l'Éternel se renouvellent chaque matin. »",
+  "narration": "« Les compassions de l'Éternel ne sont pas épuisées, elles se renouvellent chaque matin. » Lamentations 3, verset 23. Chaque matin. Pas une réserve qui s'épuise : une source qui recommence. Ce que tu as usé hier a déjà été remplacé cette nuit. Respire.",
+  "cloture": "Elles se renouvellent chaque matin.",
+  "legende": "Pas une réserve qui s'épuise. Une source qui recommence. 🌅"
+ },
+ "20": {
+  "musique": "veille",
+  "teinte": ["0x0b1220", "0x1e293b", "0x312e81"],
+  "type": "priere",
+  "verset_fr": "Psaume 23:1",
+  "verset": "« L'Éternel est mon berger : je ne manquerai de rien. »",
+  "narration": "« L'Éternel est mon berger : je ne manquerai de rien. » Psaume 23, verset 1. Relis la seconde moitié. Elle ne dit pas que tu auras tout. Elle dit que tu ne manqueras de rien. Ce n'est pas la même promesse, et c'est la meilleure des deux. Respire.",
+  "cloture": "Je ne manquerai de rien.",
+  "legende": "Il ne promet pas tout. Il promet que rien ne manquera. 🐑"
+ },
+ "21": {
+  "musique": "clarte",
+  "teinte": ["0x0b1220", "0x134e4a", "0x854d0e"],
+  "type": "louange",
+  "verset_fr": "Jean 8:12",
+  "verset": "« Je suis la lumière du monde. »",
+  "narration": "« Je suis la lumière du monde ; celui qui me suit ne marchera pas dans les ténèbres. » Jean 8, verset 12. Il ne dit pas qu'Il apporte une lampe. Il dit qu'Il est la lumière. On ne l'emprunte pas, on la suit. Respire.",
+  "cloture": "Il n'apporte pas une lampe. Il est la lumière.",
+  "legende": "On ne l'emprunte pas. On la suit. 💡"
+ },
+ "22": {
+  "musique": "aurore",
+  "teinte": ["0x0b1220", "0x0f766e", "0x155e75"],
+  "type": "priere",
+  "verset_fr": "Ésaïe 41:10",
+  "verset": "« Ne crains rien, car je suis avec toi. »",
+  "narration": "« Ne crains rien, car je suis avec toi ; ne promène pas des regards inquiets, car je suis ton Dieu. » Ésaïe 41, verset 10. La raison de ne pas craindre n'est pas que le danger ait disparu. C'est qu'Il est là, dedans, avec toi. Respire.",
+  "cloture": "Non que le danger ait disparu. Il est là.",
+  "legende": "La raison n'est pas que le danger a disparu. 🕯️"
+ },
+ "23": {
+  "musique": "veille",
+  "teinte": ["0x0b1220", "0x1e1b4b", "0x3730a3"],
+  "type": "enseignement",
+  "verset_fr": "Matthieu 6:34",
+  "verset": "« À chaque jour suffit sa peine. »",
+  "narration": "« Ne vous inquiétez donc pas du lendemain : à chaque jour suffit sa peine. » Matthieu 6, verset 34. Tu portes aujourd'hui le poids de demain, et demain n'est même pas arrivé. Repose ce que tu n'as pas encore à porter. Respire.",
+  "cloture": "Repose ce que tu n'as pas encore à porter.",
+  "legende": "Tu portes le poids d'un jour qui n'est pas arrivé. 🌾"
+ },
+ "24": {
+  "musique": "clarte",
+  "teinte": ["0x0b1220", "0x134e4a", "0x0369a1"],
+  "type": "louange",
+  "verset_fr": "Sophonie 3:17",
+  "verset": "« Il se réjouira pour toi avec des cris de joie. »",
+  "narration": "« L'Éternel, ton Dieu, est au milieu de toi ; il se réjouira pour toi avec des cris de joie. » Sophonie 3, verset 17. Relis-le lentement. Ce n'est pas toi qui chantes pour Lui. C'est Lui qui chante sur toi. Respire.",
+  "cloture": "Ce n'est pas toi qui chantes pour Lui.",
+  "legende": "C'est Lui qui chante sur toi. 🎵"
+ }
+}
