@@ -110,7 +110,7 @@ export function FloatingPillNav({ chips = true }: { chips?: boolean }) {
       )}
 
       {/* Pilule de navigation flottante */}
-      <nav className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/20 bg-slate-950/70 px-6 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:gap-3">
+      <nav className="fixed inset-x-4 bottom-6 z-50 mx-auto flex max-w-[430px] items-center justify-between rounded-full border border-white/20 bg-slate-950/85 px-4 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
         {NAV.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
