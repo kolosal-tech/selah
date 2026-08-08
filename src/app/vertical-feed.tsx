@@ -30,7 +30,7 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { FloatingPillNav } from "./nav-components";
+import { FloatingPillNav, MotSelah } from "./nav-components";
 
 export type FeedVideo = {
   id: string;
@@ -502,9 +502,7 @@ export function VerticalFeed({
       {/* Barre haute */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent px-5 pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <Link href="/" className="pointer-events-auto flex items-center">
-          <span className="text-[28px] font-extrabold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
-            Selah
-          </span>
+          <MotSelah taille={38} />
         </Link>
         <div className="pointer-events-auto flex items-center gap-2">
           <button

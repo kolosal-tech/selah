@@ -43,10 +43,7 @@ body {
 }
 
 .glass-input {
-  /* Fond sombre plutôt que blanc translucide : au-dessus d'une photographie
-     claire (ciel de coucher de soleil), un voile blanc laisse le texte saisi
-     et l'invite illisibles. */
-  background: rgba(2, 6, 23, 0.45);
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -54,7 +51,7 @@ body {
   transition: all 0.2s ease;
 }
 .glass-input:focus {
-  background: rgba(2, 6, 23, 0.6);
+  background: rgba(255, 255, 255, 0.1);
   border-color: rgba(251, 191, 36, 0.5);
   outline: none;
   box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
@@ -177,62 +174,6 @@ body {
   }
 }
 
-/* ── Fond d'ambiance photographique ──────────────────────────────────── */
-
-/* Apparition en fondu : l'image ne doit jamais « claquer » sur le dégradé. */
-@keyframes fond-apparition {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-/* Dérive très lente (Ken Burns) : le fond respire sans jamais attirer l'œil.
-   L'échelle de départ dépasse 1 pour qu'aucun bord ne se découvre. */
-@keyframes fond-derive {
-  0%   { transform: scale(1.08) translate3d(0, 0, 0); }
-  50%  { transform: scale(1.13) translate3d(-1.2%, -1%, 0); }
-  100% { transform: scale(1.08) translate3d(0, 0, 0); }
-}
-
-.fond-image {
-  will-change: transform, opacity;
-  /* Baisser la luminance sur l'image elle-même plutôt que d'empiler des
-     voiles opaques : le texte blanc garde un contraste prévisible partout,
-     et la photo garde ses couleurs au lieu de virer au gris. */
-  filter: brightness(0.72) saturate(1.2);
-  animation:
-    fond-apparition 1.2s ease-out both,
-    fond-derive 64s ease-in-out 1.2s infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fond-image {
-    animation: fond-apparition 1.2s ease-out both;
-    transform: scale(1.02);
-  }
-}
-
-/* Une photographie a des zones claires imprévisibles (reflet de lune, soleil)
-   et le feed est du plein écran vidéo. Le texte porte donc partout une ombre
-   douce : la lisibilité ne dépend plus de ce qui se trouve derrière, et on
-   n'assombrit pas l'image pour compenser. */
-main,
-header {
-  text-shadow:
-    0 1px 2px rgba(2, 6, 23, 0.9),
-    0 2px 14px rgba(2, 6, 23, 0.55);
-}
-/* Deux exceptions. Les surfaces opaques (boutons dégradés, pastilles) portent
-   déjà leur propre contraste. Et sur un texte en dégradé le glyphe est
-   transparent : l'ombre se verrait *à travers* la lettre et la salirait. */
-.btn-paradise,
-.pastille-direct,
-input,
-textarea,
-.text-gradient-gold,
-.text-gradient-paradise {
-  text-shadow: none;
-}
-
 /* Hide scrollbars */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -272,6 +213,33 @@ textarea,
 
 /* Halo doré des intervenants d'une salle */
 .halo-orateur {
-  border: 2px solid #fbbf24;
-  box-shadow: 0 0 26px rgba(245, 158, 11, 0.55);
+  border: 3px solid #fcd34d;
+  box-shadow: 0 0 0 5px rgba(251, 191, 36, 0.18), 0 0 34px 8px rgba(245, 158, 11, 0.5);
+}
+
+/* Carte de salle en direct : verre gris foncé, coins très arrondis */
+.carte-direct {
+  border-radius: 28px;
+  background: rgba(60, 66, 76, 0.55);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.carte-direct:hover {
+  background: rgba(70, 77, 88, 0.6);
+  transform: translateY(-2px);
+}
+
+/* Logotype « Selah » — blanc, italique fantaisiste, sur tous les écrans.
+   Playfair Display est chargée dans src/app/layout.tsx (next/font/google). */
+.mot-selah {
+  font-family: var(--police-selah), Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1;
+  color: #ffffff;
+  letter-spacing: 0.005em;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
 }

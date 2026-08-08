@@ -1,10 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ServiceWorker } from "./service-worker";
 import { FondAmbiance } from "./fond-ambiance";
 
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+
+/** Police du logotype « Selah » : italique fantaisiste, blanche. */
+const playfair = Playfair_Display({
+  variable: "--police-selah",
+  subsets: ["latin"],
+  style: ["italic"],
+  weight: ["500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "Selah — le réseau du Réveil",
@@ -18,7 +26,7 @@ export const viewport: Viewport = { themeColor: "#d97706", viewportFit: "cover" 
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${geist.variable} h-full antialiased dark`}>
+    <html lang="fr" className={`${geist.variable} ${playfair.variable} h-full antialiased dark`}>
       <body className="min-h-full bg-slate-950 text-white font-sans selection:bg-amber-500/30">
         {/* Fond « Paradis » : nuit profonde traversée de lumières dorées et
             turquoises — jamais d'aplat opaque. Ce dégradé est le socle peint

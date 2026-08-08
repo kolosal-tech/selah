@@ -53,9 +53,7 @@ export default async function Challenges() {
       {principal && (
         <section className="rounded-[22px] border border-amber-400/35 bg-gradient-to-br from-amber-400/[0.22] to-amber-400/[0.06] p-[18px] shadow-[0_0_30px_rgba(245,158,11,0.15)]">
           <div className="flex items-center justify-between gap-3">
-            {/* Pas de nowrap : à 390px un titre long poussait « En cours › »
-                hors de la carte ; il passe à la ligne à la place. */}
-            <span className="min-w-0 text-[17px] font-bold text-white">
+            <span className="whitespace-nowrap text-[17px] font-bold text-white">
               {principal.title}
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap text-sm text-amber-300">

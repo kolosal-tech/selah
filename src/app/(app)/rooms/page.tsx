@@ -1,13 +1,26 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { openPrayerRoom } from "@/app/actions";
-import { Radio, Plus, Users } from "lucide-react";
+import { Radio, Plus, Users, Bell } from "lucide-react";
 
-/** Barres de l'onde sonore : hauteurs déterministes (pas de rendu aléatoire
- *  divergent entre serveur et client). */
-const ONDE = Array.from({ length: 30 }, (_, i) =>
-  Math.round(8 + Math.abs(Math.sin(i * 1.1)) * 24),
+/** Onde sonore : hauteurs déterministes (même rendu serveur et client). */
+const ONDE = Array.from({ length: 9 }, (_, i) =>
+  Math.round(10 + Math.abs(Math.sin(i * 1.7)) * 30),
 );
+
+function Onde() {
+  return (
+    <div className="flex h-11 flex-1 items-center gap-[2px] overflow-hidden">
+      {ONDE.map((h, i) => (
+        <span
+          key={i}
+          className={`w-[3px] shrink-0 rounded-full bg-amber-300 animate-soundwave-${(i % 4) + 1}`}
+          style={{ height: `${h}px`, opacity: 0.5 + h / 80 }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default async function Rooms() {
   const supabase = await supabaseServer();
@@ -19,24 +32,25 @@ export default async function Rooms() {
     .limit(30);
 
   return (
-    <main className="flex flex-col gap-6">
-      {/* En-tête « Direct / Upper Room » — une seule ligne, comme la maquette */}
-      <div>
-        <div className="flex items-baseline gap-2 whitespace-nowrap">
-          <span className="text-[26px] font-bold tracking-tight text-rose-400">Direct</span>
-          <span className="text-[26px] font-light text-white/40">/</span>
-          <span className="text-[26px] font-bold tracking-tight text-teal-300">Upper Room</span>
+    <main className="flex flex-col gap-5">
+      {/* En-tête : titre large corail / turquoise + cloche de notifications */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-baseline gap-2 whitespace-nowrap text-[26px] font-semibold tracking-tight">
+          <span className="text-rose-400">Direct</span>
+          <span className="font-light text-white/40">/</span>
+          <span className="text-teal-300">Upper Room</span>
         </div>
-        <p className="mt-1 text-sm text-white/70">
-          Salles de prière et d&apos;intercession en direct. On entre, on s&apos;unit dans l&apos;Esprit. (Actes 1:13-14)
-        </p>
+        <span className="relative mt-1 shrink-0 text-white/80">
+          <Bell className="h-[22px] w-[22px]" />
+          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-rose-500" />
+        </span>
       </div>
+      <p className="-mt-3 text-sm text-white/70">
+        Salles de prière et d&apos;intercession en direct. On entre, on s&apos;unit dans l&apos;Esprit. (Actes 1:13-14)
+      </p>
 
       {/* Ouvrir une salle */}
-      <form
-        action={openPrayerRoom}
-        className="glass-card relative overflow-hidden p-5 shadow-2xl"
-      >
+      <form action={openPrayerRoom} className="glass-card relative overflow-hidden p-5 shadow-2xl">
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             name="title"
@@ -58,59 +72,55 @@ export default async function Rooms() {
       </form>
 
       {/* Cartes de salles en direct */}
-      <div className="grid gap-6">
+      <div className="grid gap-6 pt-3">
         {(rooms ?? []).map((r, idx) => {
           const hote = r.profiles?.username ?? "disciple";
           return (
             <Link
               key={r.id}
               href={`/rooms/${r.id}`}
-              className="glass-card glass-card-hover group relative block overflow-visible px-5 pb-5 pt-6"
+              className="carte-direct group relative block px-[18px] pb-[18px] pt-6"
             >
               <span className="pastille-direct">● EN DIRECT</span>
 
-              <h3 className="text-[19px] font-bold text-white transition group-hover:text-amber-300">
+              <h3 className="text-xl font-semibold tracking-tight text-white transition group-hover:text-amber-200">
                 {r.title}
               </h3>
-              <p className="mt-1 text-xs text-white/60">
-                {r.topic || "Prière libre"} · Animée par{" "}
-                <strong className="text-amber-300">@{hote}</strong>
-              </p>
 
-              {/* Intervenants, halo doré */}
-              <div className="mt-5 flex items-center justify-around">
-                <div className="flex flex-col items-center gap-2">
-                  <span className="halo-orateur flex h-[72px] w-[72px] items-center justify-center rounded-full bg-amber-500/25 text-lg font-bold text-amber-200">
+              {/* Intervenants encadrés par l'onde sonore, halos dorés */}
+              <div className="mt-[18px] flex items-center justify-between gap-1">
+                <Onde />
+                <div className="flex shrink-0 flex-col items-center gap-2">
+                  <span className="halo-orateur flex h-[76px] w-[76px] items-center justify-center rounded-full bg-amber-500/25 text-lg font-bold text-amber-100">
                     {hote[0]?.toUpperCase() ?? "S"}
                   </span>
-                  <span className="text-sm font-semibold text-white">@{hote}</span>
+                  <span className="whitespace-nowrap text-[15px] font-medium text-white">@{hote}</span>
                 </div>
-                <div className="flex flex-col items-center gap-2">
-                  <span className="halo-orateur flex h-[72px] w-[72px] items-center justify-center rounded-full bg-amber-500/25 text-lg font-bold text-amber-200">
+                <Onde />
+                <div className="mt-[26px] flex shrink-0 flex-col items-center gap-2">
+                  <span className="halo-orateur flex h-[76px] w-[76px] items-center justify-center rounded-full bg-amber-500/25 text-lg font-bold text-amber-100">
                     I
                   </span>
-                  <span className="text-sm font-semibold text-white">Intercesseurs</span>
+                  <span className="whitespace-nowrap text-[15px] font-medium text-white">Intercesseurs</span>
                 </div>
               </div>
 
-              {/* Onde sonore pulsée */}
-              <div className="mt-4 flex h-[34px] items-end justify-center gap-[3px]">
-                {ONDE.map((h, i) => (
-                  <span
-                    key={i}
-                    className={`w-[3px] rounded-full bg-amber-400 animate-soundwave-${(i % 4) + 1}`}
-                    style={{ height: `${h}px`, opacity: 0.45 + h / 60 }}
-                  />
-                ))}
+              {/* Commentaires live */}
+              <div className="mt-[18px] flex flex-col gap-2">
+                <p className="text-[13px] text-white/70">
+                  {r.topic || "Prière libre"} · Animée par{" "}
+                  <strong className="text-amber-300">@{hote}</strong>
+                </p>
+                <p className="text-[13px] text-white/45">Live comments…</p>
               </div>
 
-              {/* Pied de carte : auditeurs + rejoindre */}
-              <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
-                <span className="flex items-center gap-2 text-xs text-white/60">
+              {/* Pied de carte */}
+              <div className="mt-3.5 flex items-center justify-between border-t border-white/10 pt-3.5">
+                <span className="flex items-center gap-2 text-[13px] text-white/60">
                   <Users className="h-4 w-4" />
                   <span>{12 + idx * 7} auditeurs</span>
                 </span>
-                <span className="rounded-full bg-gradient-to-r from-amber-200 to-teal-300 px-6 py-2.5 text-[15px] font-bold text-slate-950 shadow-[0_0_22px_rgba(94,234,212,0.3)] transition group-hover:scale-105">
+                <span className="rounded-full bg-gradient-to-r from-amber-200 to-teal-300 px-[26px] py-2.5 text-[15px] font-bold text-slate-950 shadow-[0_0_22px_rgba(94,234,212,0.3)] transition group-hover:scale-105">
                   Se Joindre
                 </span>
               </div>
