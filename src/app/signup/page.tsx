@@ -17,7 +17,7 @@ export default async function Signup({
   const paysDetecte = entetes.get("x-vercel-ip-country");
   const erreurs: Record<string, string> = {
     charte: m.auth.erreurCharte,
-    username: m.auth.erreurUsername,
+    nom: m.auth.erreurUsername,
   };
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6 py-12">
@@ -39,15 +39,18 @@ export default async function Signup({
         </p>
       )}
       <form action={signup} className="flex flex-col gap-3">
-        {/* `title` est indispensable : sans lui, le navigateur refuse le champ
-            avec son message générique, qui ne dit jamais quels caractères
-            sont acceptés. */}
+        {/* Un prénom, rien de plus. Pas de `pattern` : la seule contrainte
+            est d'écrire quelque chose, et elle vaut pour toutes les
+            écritures — « Aïcha », « 마리아 » et « Marie-Claire » passent.
+            L'identifiant technique est dérivé côté serveur. */}
         <div className="flex flex-col gap-1">
           <input
-            name="username"
+            name="nom"
             required
+            minLength={2}
+            maxLength={40}
+            autoComplete="given-name"
             placeholder={m.auth.nomUtilisateur}
-            pattern="[a-zA-Z0-9_]{3,30}"
             title={m.auth.nomUtilisateurTitre}
             className="glass-input rounded-xl p-3 placeholder:text-white/40"
           />

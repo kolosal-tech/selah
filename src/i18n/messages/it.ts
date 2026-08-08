@@ -62,11 +62,9 @@ export const it: Messages = {
     creerCompte: "Crea il mio account",
     confirmeEmail:
       "Account creato! Controlla la tua casella di posta per confermare l'indirizzo, poi accedi.",
-    nomUtilisateur: "Nome utente",
-    nomUtilisateurAide:
-      "Lettere, cifre e _ — niente punto, trattino o spazio. Esempio: selah_luce",
-    nomUtilisateurTitre:
-      "Da 3 a 30 caratteri: solo lettere, cifre e trattino basso (_). Niente punto, trattino o spazio.",
+    nomUtilisateur: "Nome o soprannome",
+    nomUtilisateurAide: "Il tuo nome basta. Maria, Jean-Baptiste, Aicha, o il soprannome che preferisci.",
+    nomUtilisateurTitre: "Il tuo nome basta. Maria, Jean-Baptiste, Aicha, o il soprannome che preferisci.",
     pays: "Paese",
     paysDetecte: (pays: string) => `Rilevato: ${pays}`,
     langueSuivra: "Selah ti parlerà nella lingua del tuo paese — modificabile in ogni momento.",
@@ -74,7 +72,7 @@ export const it: Messages = {
     charteTexte:
       "mi impegno a edificare, non a distruggere; a parlare con grazia e verità; a rispettare ogni fratello e sorella; a non pubblicare nulla di contrario al Vangelo. (Ef. 4:29)",
     erreurCharte: "Devi accettare la carta spirituale per unirti a Selah.",
-    erreurUsername: "Nome utente: da 3 a 30 caratteri, lettere/cifre/trattino basso.",
+    erreurUsername: "Inserisci almeno due caratteri — un nome o un soprannome.",
   },
   decouvrir: {
     badge: "Risveglio Mondiale",

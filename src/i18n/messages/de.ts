@@ -62,11 +62,9 @@ export const de: Messages = {
     creerCompte: "Mein Konto erstellen",
     confirmeEmail:
       "Konto erstellt! Prüfe dein Postfach, um deine Adresse zu bestätigen, und melde dich dann an.",
-    nomUtilisateur: "Benutzername",
-    nomUtilisateurAide:
-      "Buchstaben, Ziffern und _ — kein Punkt, Bindestrich oder Leerzeichen. Beispiel: selah_licht",
-    nomUtilisateurTitre:
-      "3 bis 30 Zeichen: nur Buchstaben, Ziffern und Unterstrich (_). Kein Punkt, Bindestrich oder Leerzeichen.",
+    nomUtilisateur: "Vorname oder Spitzname",
+    nomUtilisateurAide: "Dein Vorname genügt. Maria, Jean-Baptiste, Aisha, oder ein Spitzname deiner Wahl.",
+    nomUtilisateurTitre: "Dein Vorname genügt. Maria, Jean-Baptiste, Aisha, oder ein Spitzname deiner Wahl.",
     pays: "Land",
     paysDetecte: (pays: string) => `Erkannt: ${pays}`,
     langueSuivra: "Selah spricht die Sprache deines Landes — jederzeit änderbar.",
@@ -74,7 +72,7 @@ export const de: Messages = {
     charteTexte:
       "ich verpflichte mich, aufzubauen statt niederzureißen; mit Gnade und Wahrheit zu reden; jeden Bruder und jede Schwester zu achten; nichts zu veröffentlichen, was dem Evangelium widerspricht. (Eph. 4,29)",
     erreurCharte: "Du musst die geistliche Charta annehmen, um Selah beizutreten.",
-    erreurUsername: "Benutzername: 3 bis 30 Zeichen, Buchstaben/Ziffern/Unterstrich.",
+    erreurUsername: "Gib mindestens zwei Zeichen ein — einen Vornamen oder einen Spitznamen.",
   },
   decouvrir: {
     badge: "Weltweite Erweckung",

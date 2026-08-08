@@ -62,11 +62,9 @@ export const en: Messages = {
     creerCompte: "Create my account",
     confirmeEmail:
       "Account created! Check your inbox to confirm your address, then sign in.",
-    nomUtilisateur: "Username",
-    nomUtilisateurAide:
-      "Letters, digits and _ — no dot, dash or space. Example: selah_light",
-    nomUtilisateurTitre:
-      "3 to 30 characters: letters, digits and underscore (_) only. No dot, dash or space.",
+    nomUtilisateur: "First name or nickname",
+    nomUtilisateurAide: "Your first name is enough. Mary, Jean-Baptiste, Aisha, or any nickname you like.",
+    nomUtilisateurTitre: "Your first name is enough. Mary, Jean-Baptiste, Aisha, or any nickname you like.",
     pays: "Country",
     paysDetecte: (pays: string) => `Detected: ${pays}`,
     langueSuivra: "Selah will speak your country's language — you can change it anytime.",
@@ -74,7 +72,7 @@ export const en: Messages = {
     charteTexte:
       "I commit to build up, not to tear down; to speak with grace and truth; to respect every brother and sister; to publish nothing contrary to the Gospel. (Eph. 4:29)",
     erreurCharte: "You must accept the spiritual charter to join Selah.",
-    erreurUsername: "Username: 3 to 30 characters, letters/digits/underscore.",
+    erreurUsername: "Enter at least two characters — a first name or a nickname.",
   },
   decouvrir: {
     badge: "Global Revival",

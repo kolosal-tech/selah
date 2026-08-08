@@ -6,6 +6,12 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { sabbathEnd } from "@/lib/sabbath";
 import { COOKIE_LOCALE, estLocale, localePourPays } from "@/i18n/config";
+import {
+  identifiantDepuisNom,
+  identifiantNeutre,
+  nettoyerNomAffiche,
+  nomAfficheValide,
+} from "@/lib/identifiant";
 
 async function requireUser() {
   const supabase = await supabaseServer();
@@ -19,14 +25,18 @@ async function requireUser() {
 export async function signup(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const username = String(formData.get("username") ?? "").trim().toLowerCase();
+  const nom = nettoyerNomAffiche(String(formData.get("nom") ?? ""));
   const country = String(formData.get("country") ?? "FR").toUpperCase().slice(0, 2);
   if (!formData.get("charte")) {
     redirect("/signup?error=charte");
   }
-  if (!/^[a-z0-9_]{3,30}$/.test(username)) {
-    redirect("/signup?error=username");
+  if (!nomAfficheValide(nom)) {
+    redirect("/signup?error=nom");
   }
+  // Un prénom suffit : l'identifiant technique en est dérivé, et le trigger
+  // `handle_new_user` règle les collisions en suffixant. Une écriture non
+  // latine ne laissant rien en ASCII, on retombe sur un identifiant neutre.
+  const username = identifiantDepuisNom(nom) || identifiantNeutre(email);
   // La langue suit le pays choisi, dès maintenant : l'écran suivant
   // (confirmation ou accueil) parle déjà la langue de l'utilisateur.
   const locale = localePourPays(country);
@@ -40,7 +50,7 @@ export async function signup(formData: FormData) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { username, country, locale } },
+    options: { data: { username, display_name: nom, country, locale } },
   });
   if (error || !data.user)
     redirect(`/signup?error=${encodeURIComponent(error?.message ?? "inconnu")}`);

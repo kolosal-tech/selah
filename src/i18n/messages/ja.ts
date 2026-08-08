@@ -62,11 +62,9 @@ export const ja: Messages = {
     creerCompte: "アカウントを作成",
     confirmeEmail:
       "アカウントが作成されました！メールでアドレスを確認してからログインしてください。",
-    nomUtilisateur: "ユーザー名",
-    nomUtilisateurAide:
-      "英字・数字・_ のみ — ピリオド、ハイフン、スペースは不可。例：selah_hikari",
-    nomUtilisateurTitre:
-      "3〜30文字：英字・数字・アンダースコア（_）のみ。ピリオド、ハイフン、スペースは不可。",
+    nomUtilisateur: "名前またはニックネーム",
+    nomUtilisateurAide: "下の名前だけで大丈夫です。マリー、ジャン＝バティスト、アイシャ、好きなニックネームでも。",
+    nomUtilisateurTitre: "下の名前だけで大丈夫です。マリー、ジャン＝バティスト、アイシャ、好きなニックネームでも。",
     pays: "国",
     paysDetecte: (pays: string) => `検出：${pays}`,
     langueSuivra: "Selah はあなたの国の言語で話します — いつでも変更できます。",
@@ -74,7 +72,7 @@ export const ja: Messages = {
     charteTexte:
       "壊すのではなく建て上げること、恵みと真理をもって語ること、すべての兄弟姉妹を尊重すること、福音に反するものを投稿しないことを誓います。（エペソ 4:29）",
     erreurCharte: "Selah に参加するには霊的な誓約に同意する必要があります。",
-    erreurUsername: "ユーザー名：3〜30文字、英数字とアンダースコアのみ。",
+    erreurUsername: "2文字以上を入力してください — 名前かニックネームを。",
   },
   decouvrir: {
     badge: "世界的リバイバル",

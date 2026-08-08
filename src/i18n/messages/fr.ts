@@ -68,11 +68,9 @@ export const fr = {
     creerCompte: "Créer mon compte",
     confirmeEmail:
       "Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse, puis connecte-toi.",
-    nomUtilisateur: "Nom d'utilisateur",
-    nomUtilisateurAide:
-      "Lettres, chiffres et _ — ni point, ni tiret, ni espace. Exemple : selah_lumiere",
-    nomUtilisateurTitre:
-      "3 à 30 caractères : lettres, chiffres et tiret bas (_) uniquement. Ni point, ni tiret, ni espace.",
+    nomUtilisateur: "Prénom ou pseudo",
+    nomUtilisateurAide: "Ton prénom suffit. Marie, Jean-Baptiste, Aïcha, ou le pseudo que tu veux.",
+    nomUtilisateurTitre: "Ton prénom suffit. Marie, Jean-Baptiste, Aïcha, ou le pseudo que tu veux.",
     pays: "Pays",
     paysDetecte: (pays: string) => `Détecté : ${pays}`,
     langueSuivra: "Selah te parlera dans la langue de ton pays — modifiable à tout moment.",
@@ -80,7 +78,7 @@ export const fr = {
     charteTexte:
       "je m'engage à édifier, non à détruire ; à parler avec grâce et vérité ; à respecter chaque frère et sœur ; à ne rien publier de contraire à l'Évangile. (Éph. 4:29)",
     erreurCharte: "Tu dois accepter la charte spirituelle pour rejoindre Selah.",
-    erreurUsername: "Nom d'utilisateur : 3 à 30 caractères, lettres/chiffres/underscore.",
+    erreurUsername: "Indique au moins deux caractères — un prénom ou un pseudo.",
   },
   decouvrir: {
     badge: "Réveil Mondial",

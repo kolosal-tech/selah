@@ -62,11 +62,9 @@ export const pt: Messages = {
     creerCompte: "Criar minha conta",
     confirmeEmail:
       "Conta criada! Verifique seu e-mail para confirmar seu endereço e depois entre.",
-    nomUtilisateur: "Nome de usuário",
-    nomUtilisateurAide:
-      "Letras, números e _ — sem ponto, hífen ou espaço. Exemplo: selah_luz",
-    nomUtilisateurTitre:
-      "De 3 a 30 caracteres: apenas letras, números e sublinhado (_). Sem ponto, hífen ou espaço.",
+    nomUtilisateur: "Nome ou apelido",
+    nomUtilisateurAide: "Seu primeiro nome basta. Maria, Jean-Baptiste, Aicha, ou o apelido que quiser.",
+    nomUtilisateurTitre: "Seu primeiro nome basta. Maria, Jean-Baptiste, Aicha, ou o apelido que quiser.",
     pays: "País",
     paysDetecte: (pays: string) => `Detectado: ${pays}`,
     langueSuivra: "Selah falará a língua do seu país — você pode mudar quando quiser.",
@@ -74,7 +72,7 @@ export const pt: Messages = {
     charteTexte:
       "comprometo-me a edificar, não a destruir; a falar com graça e verdade; a respeitar cada irmão e irmã; a não publicar nada contrário ao Evangelho. (Ef. 4:29)",
     erreurCharte: "Você precisa aceitar a carta espiritual para entrar no Selah.",
-    erreurUsername: "Nome de usuário: de 3 a 30 caracteres, letras/números/sublinhado.",
+    erreurUsername: "Digite pelo menos dois caracteres — um nome ou um apelido.",
   },
   decouvrir: {
     badge: "Avivamento Mundial",

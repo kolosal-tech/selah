@@ -62,11 +62,9 @@ export const ko: Messages = {
     creerCompte: "계정 만들기",
     confirmeEmail:
       "계정이 생성되었습니다! 메일함에서 주소를 확인한 후 로그인하세요.",
-    nomUtilisateur: "사용자 이름",
-    nomUtilisateurAide:
-      "영문, 숫자, _ 만 — 마침표, 하이픈, 공백 불가. 예: selah_bit",
-    nomUtilisateurTitre:
-      "3~30자: 영문, 숫자, 밑줄(_)만 가능. 마침표, 하이픈, 공백 불가.",
+    nomUtilisateur: "이름 또는 별명",
+    nomUtilisateurAide: "이름만으로 충분합니다. 마리, 장바티스트, 아이샤, 원하는 별명도 좋아요.",
+    nomUtilisateurTitre: "이름만으로 충분합니다. 마리, 장바티스트, 아이샤, 원하는 별명도 좋아요.",
     pays: "국가",
     paysDetecte: (pays: string) => `감지됨: ${pays}`,
     langueSuivra: "Selah가 당신 나라의 언어로 말합니다 — 언제든 변경할 수 있습니다.",
@@ -74,7 +72,7 @@ export const ko: Messages = {
     charteTexte:
       "무너뜨리지 않고 세우며, 은혜와 진리로 말하며, 모든 형제자매를 존중하며, 복음에 어긋나는 것을 게시하지 않을 것을 약속합니다. (엡 4:29)",
     erreurCharte: "Selah에 참여하려면 영적 헌장에 동의해야 합니다.",
-    erreurUsername: "사용자 이름: 3~30자, 영문/숫자/밑줄만 가능.",
+    erreurUsername: "두 글자 이상 입력하세요 — 이름이나 별명을.",
   },
   decouvrir: {
     badge: "세계적 부흥",

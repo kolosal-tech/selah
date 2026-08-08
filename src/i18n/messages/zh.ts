@@ -62,11 +62,9 @@ export const zh: Messages = {
     creerCompte: "创建我的账号",
     confirmeEmail:
       "账号已创建！请查收邮件确认地址，然后登录。",
-    nomUtilisateur: "用户名",
-    nomUtilisateurAide:
-      "字母、数字和 _ — 不含句点、连字符或空格。示例：selah_guang",
-    nomUtilisateurTitre:
-      "3 到 30 个字符：仅限字母、数字和下划线（_）。不含句点、连字符或空格。",
+    nomUtilisateur: "名字或昵称",
+    nomUtilisateurAide: "写名字就够了。玛丽、让-巴蒂斯特、阿伊莎，或任何你喜欢的昵称。",
+    nomUtilisateurTitre: "写名字就够了。玛丽、让-巴蒂斯特、阿伊莎，或任何你喜欢的昵称。",
     pays: "国家",
     paysDetecte: (pays: string) => `已检测：${pays}`,
     langueSuivra: "Selah 将使用你所在国家的语言 — 随时可以更改。",
@@ -74,7 +72,7 @@ export const zh: Messages = {
     charteTexte:
       "我承诺造就人而不拆毁；以恩典和真理说话；尊重每位弟兄姊妹；不发布任何违背福音的内容。（弗 4:29）",
     erreurCharte: "你必须接受属灵公约才能加入 Selah。",
-    erreurUsername: "用户名：3 到 30 个字符，字母/数字/下划线。",
+    erreurUsername: "请至少输入两个字符——名字或昵称。",
   },
   decouvrir: {
     badge: "全球复兴",
