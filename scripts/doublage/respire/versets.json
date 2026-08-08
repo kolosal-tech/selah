@@ -1,9 +1,13 @@
 {
- "_note": "Série « Respire » : le verset seul, lu lentement, sur un fond peint par le montage et une musique composée pour Selah. Pas de photo, pas d'exhortation — une respiration entre deux vidéos du fil. Durée visée : 18 à 24 secondes.",
+ "_note": "Série « Respire » : le verset seul, lu lentement, sur un fond peint par le montage et une musique composée pour Selah. Pas de photo, pas d'exhortation — une respiration entre deux vidéos du fil. Durée visée : 18 à 24 secondes. Aucune image générée : le fond est calculé au montage, la mention de légende le dit.",
  "_musique": "Trois pièces originales (aurore, veille, clarté) composées avec ElevenLabs, alternées d'une unité à l'autre.",
  "19": {
   "musique": "aurore",
-  "teinte": ["0x0b1220", "0x134e4a", "0x1e3a5f"],
+  "teinte": [
+   "0x0b1220",
+   "0x134e4a",
+   "0x1e3a5f"
+  ],
   "type": "priere",
   "verset_fr": "Lamentations 3:23",
   "verset": "« Les compassions de l'Éternel se renouvellent chaque matin. »",
@@ -13,7 +17,11 @@
  },
  "20": {
   "musique": "veille",
-  "teinte": ["0x0b1220", "0x1e293b", "0x312e81"],
+  "teinte": [
+   "0x0b1220",
+   "0x1e293b",
+   "0x312e81"
+  ],
   "type": "priere",
   "verset_fr": "Psaume 23:1",
   "verset": "« L'Éternel est mon berger : je ne manquerai de rien. »",
@@ -23,7 +31,11 @@
  },
  "21": {
   "musique": "clarte",
-  "teinte": ["0x0b1220", "0x134e4a", "0x854d0e"],
+  "teinte": [
+   "0x0b1220",
+   "0x134e4a",
+   "0x854d0e"
+  ],
   "type": "louange",
   "verset_fr": "Jean 8:12",
   "verset": "« Je suis la lumière du monde. »",
@@ -33,7 +45,11 @@
  },
  "22": {
   "musique": "aurore",
-  "teinte": ["0x0b1220", "0x0f766e", "0x155e75"],
+  "teinte": [
+   "0x0b1220",
+   "0x0f766e",
+   "0x155e75"
+  ],
   "type": "priere",
   "verset_fr": "Ésaïe 41:10",
   "verset": "« Ne crains rien, car je suis avec toi. »",
@@ -43,7 +59,11 @@
  },
  "23": {
   "musique": "veille",
-  "teinte": ["0x0b1220", "0x1e1b4b", "0x3730a3"],
+  "teinte": [
+   "0x0b1220",
+   "0x1e1b4b",
+   "0x3730a3"
+  ],
   "type": "enseignement",
   "verset_fr": "Matthieu 6:34",
   "verset": "« À chaque jour suffit sa peine. »",
@@ -53,12 +73,17 @@
  },
  "24": {
   "musique": "clarte",
-  "teinte": ["0x0b1220", "0x134e4a", "0x0369a1"],
+  "teinte": [
+   "0x0b1220",
+   "0x134e4a",
+   "0x0369a1"
+  ],
   "type": "louange",
   "verset_fr": "Sophonie 3:17",
   "verset": "« Il se réjouira pour toi avec des cris de joie. »",
   "narration": "« L'Éternel, ton Dieu, est au milieu de toi ; il se réjouira pour toi avec des cris de joie. » Sophonie 3, verset 17. Relis-le lentement. Ce n'est pas toi qui chantes pour Lui. C'est Lui qui chante sur toi. Respire.",
   "cloture": "Ce n'est pas toi qui chantes pour Lui.",
   "legende": "C'est Lui qui chante sur toi. 🎵"
- }
+ },
+ "_mention": "— musique originale Selah"
 }

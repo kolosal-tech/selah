@@ -20,7 +20,10 @@ import uuid
 URL = "https://ilqzmpcmahxxnbdrugyt.supabase.co"
 UID = "17a9bf8f-e809-4892-ab3b-78013d239e66"
 COURRIEL = "mrkolosal+selah-lumiere@gmail.com"
-MENTION_IA = "— visuel généré par IA"
+# Mention de la légende : les séries sur images ou plans générés le
+# disent, la série « Respire » annonce sa musique. Le fichier de la
+# série peut l'imposer par la clé "_mention".
+MENTION_DEFAUT = "— visuel généré par IA"
 
 
 def appel(methode, chemin, corps=None, entetes=None, anon=""):
@@ -44,8 +47,9 @@ def main() -> None:
     anon = os.environ["ANON"]
     videos = pathlib.Path(a.videos)
     ici = pathlib.Path(__file__).parent
-    unites = {k: v for k, v in json.load(open(ici / "narrations-fr.json")).items()
-              if not k.startswith("_")}
+    source = json.load(open(ici / "narrations-fr.json"))
+    mention = source.get("_mention", MENTION_DEFAUT)
+    unites = {k: v for k, v in source.items() if not k.startswith("_")}
 
     code, corps = appel("POST", "/auth/v1/token?grant_type=password",
                         json.dumps({"email": COURRIEL, "password": a.mot_de_passe}).encode(),
@@ -99,7 +103,7 @@ def main() -> None:
                 "author_id": UID,
                 "storage_path": chemins["mp4"],
                 "thumb_path": chemins["jpg"],
-                "caption": f"{bloc['legende']} {MENTION_IA}",
+                "caption": f"{bloc['legende']} {mention}",
                 "verse_ref": bloc["verset_fr"],
                 "type": bloc["type"],
                 "duration_s": duree,
