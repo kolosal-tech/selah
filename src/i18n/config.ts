@@ -121,3 +121,13 @@ export function localePourAcceptLanguage(header: string | null): Locale | null {
   }
   return null;
 }
+
+/**
+ * Enveloppe un identifiant pour qu'il garde sa direction propre à
+ * l'intérieur d'une phrase. Sans cela, dans une phrase arabe ou hébraïque,
+ * l'arobase — caractère neutre — suit la direction de la phrase et se pose
+ * après le nom : « selah_lumiere@ ».
+ */
+export function pseudo(nom: string): string {
+  return `\u2066@${nom}\u2069`;
+}

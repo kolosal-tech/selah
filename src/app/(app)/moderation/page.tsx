@@ -3,6 +3,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { BoutonsModeration } from "./boutons";
 import { ShieldCheck, Flag, EyeOff } from "lucide-react";
 import { getLocale, getMessages } from "@/i18n/server";
+import { pseudo } from "@/i18n/config";
 
 type LigneSignalement = {
   id: string;
@@ -137,7 +138,7 @@ export default async function Moderation() {
                     </p>
                   )}
                   <p className="text-xs text-white/50">
-                    {m.moderation.signaleePar(s.reporter?.username ?? m.commun.inconnu)} —{" "}
+                    {m.moderation.signaleePar(pseudo(s.reporter?.username ?? m.commun.inconnu))} —{" "}
                     {new Date(s.created_at).toLocaleDateString(locale, {
                       day: "numeric",
                       month: "long",

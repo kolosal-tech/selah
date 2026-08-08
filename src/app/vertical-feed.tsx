@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { FloatingPillNav, MotSelah } from "./nav-components";
 import { useLocale, useMessages } from "@/i18n/client";
+import { pseudo } from "@/i18n/config";
 import type { Messages } from "@/i18n/messages";
 
 export type FeedVideo = {
@@ -433,7 +434,7 @@ export function VerticalFeed({
         return s;
       });
     } else if (!suivait) {
-      afficherToast(m.video.tuSuis(v.username ?? m.commun.frere));
+      afficherToast(m.video.tuSuis(pseudo(v.username ?? m.commun.frere)));
     }
   }
 
@@ -676,7 +677,7 @@ export function VerticalFeed({
                   <div className="flex w-full items-center gap-2.5 rounded-2xl border border-white/15 bg-white/[0.14] px-3.5 py-2.5 backdrop-blur-xl">
                     <Music2 className="h-4 w-4 shrink-0 text-amber-200" />
                     <bdi className="truncate text-sm text-white/95">
-                      {m.video.sonOriginal(v.username ?? m.commun.disciple)}
+                      {m.video.sonOriginal(pseudo(v.username ?? m.commun.disciple))}
                     </bdi>
                   </div>
                 </div>
@@ -698,7 +699,11 @@ export function VerticalFeed({
                   {!estMoi && (
                     <button
                       onClick={() => suivre(v)}
-                      aria-label={suit ? m.video.nePlusSuivre(v.username ?? "") : m.video.suivre(v.username ?? "")}
+                      aria-label={
+                        suit
+                          ? m.video.nePlusSuivre(pseudo(v.username ?? m.commun.disciple))
+                          : m.video.suivre(pseudo(v.username ?? m.commun.disciple))
+                      }
                       className={`absolute -bottom-2 left-1/2 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full text-white shadow-md transition hover:scale-110 ${
                         suit ? "bg-emerald-500" : "bg-rose-500"
                       }`}
