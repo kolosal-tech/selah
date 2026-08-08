@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { isSabbathActive } from "@/lib/sabbath";
 import { logout } from "@/app/actions";
 import { FloatingPillNav } from "../nav-components";
+import { AmbianceSonore } from "../ambiance-sonore";
 import { Flame, LogOut, Sparkles } from "lucide-react";
 
 export default async function AppLayout({
@@ -39,6 +40,7 @@ export default async function AppLayout({
             <span>{profile?.streak_days ?? 0} j</span>
           </div>
           <span className="text-white/80 font-medium hidden sm:inline">@{profile?.username}</span>
+          <AmbianceSonore />
           <form action={logout}>
             <button className="flex items-center gap-1 text-white/50 hover:text-white transition">
               <LogOut className="h-4 w-4" />

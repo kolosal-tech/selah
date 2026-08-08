@@ -186,18 +186,18 @@ export function RoomLive({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="flex items-center gap-3 text-sm text-stone-500">
+      <p className="flex items-center gap-3 text-sm text-white/60">
         <span>
           🕯️ {presents} {presents > 1 ? "personnes présentes" : "personne présente"}
         </span>
-        <span className={lien === "direct" ? "text-red-600" : "text-stone-400"}>
+        <span className={lien === "direct" ? "text-rose-400" : "text-white/40"}>
           {etatLien}
         </span>
       </p>
 
-      <div className="flex max-h-[55vh] flex-col gap-2 overflow-y-auto rounded-2xl border border-amber-100 bg-white p-4">
+      <div className="glass-card flex max-h-[55vh] flex-col gap-2 overflow-y-auto p-4">
         {messages.length === 0 && (
-          <p className="text-center text-sm text-stone-400">
+          <p className="text-center text-sm text-white/45">
             La salle est silencieuse. Ouvre la prière.
           </p>
         )}
@@ -206,12 +206,12 @@ export function RoomLive({
             key={m.id}
             className={
               m.author_id === userId
-                ? "max-w-[85%] self-end rounded-2xl rounded-br-sm bg-amber-600 px-3 py-2 text-sm text-white"
-                : "max-w-[85%] self-start rounded-2xl rounded-bl-sm bg-amber-50 px-3 py-2 text-sm text-stone-800"
+                ? "max-w-[85%] self-end rounded-2xl rounded-br-sm bg-gradient-gold-turquoise px-3 py-2 text-sm font-medium text-slate-950"
+                : "max-w-[85%] self-start rounded-2xl rounded-bl-sm border border-white/10 bg-white/10 px-3 py-2 text-sm text-white/90"
             }
           >
             {m.author_id !== userId && (
-              <span className="block text-xs font-semibold text-amber-700">
+              <span className="block text-xs font-semibold text-amber-300">
                 @{m.auteur}
               </span>
             )}
@@ -221,7 +221,7 @@ export function RoomLive({
         <div ref={finRef} />
       </div>
 
-      {erreur && <p className="text-sm text-red-700">{erreur}</p>}
+      {erreur && <p className="text-sm text-rose-300">{erreur}</p>}
 
       <form onSubmit={envoyer} className="flex gap-2">
         <input
@@ -229,9 +229,9 @@ export function RoomLive({
           onChange={(e) => setTexte(e.target.value)}
           placeholder="Prie, exhorte, cite un verset…"
           maxLength={1000}
-          className="flex-1 rounded-lg border border-stone-200 p-3 text-sm"
+          className="glass-input flex-1 rounded-xl p-3 text-sm placeholder:text-white/40"
         />
-        <button className="rounded-full bg-amber-600 px-5 font-semibold text-white hover:bg-amber-700">
+        <button className="btn-paradise rounded-full px-5 transition hover:scale-105">
           Envoyer
         </button>
       </form>

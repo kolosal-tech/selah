@@ -8,9 +8,12 @@
 // Rien de ce qui vient de Supabase n'est mis en cache : ces réponses sont
 // personnelles et soumises à la RLS.
 
-const CACHE = "selah-v1";
+const CACHE = "selah-v2";
 const HORS_LIGNE = "/hors-ligne";
 const PRECHARGE = [HORS_LIGNE, "/manifest.json", "/icon-192.png", "/icon-512.png"];
+
+/** Médias d'ambiance : immuables, et c'est ce qu'on veut garder en 2G. */
+const PREFIXES_MEDIAS = ["/fonds/", "/sons/", "/landing/"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -39,7 +42,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname.startsWith("/_next/static/") || PRECHARGE.includes(url.pathname)) {
+  const media = PREFIXES_MEDIAS.some((p) => url.pathname.startsWith(p));
+  if (url.pathname.startsWith("/_next/static/") || media || PRECHARGE.includes(url.pathname)) {
     event.respondWith(
       caches.match(requete).then(
         (enCache) =>

@@ -17,8 +17,12 @@ export default function Decouvrir() {
         <div className="absolute inset-0 bg-emerald-950/20 z-10 mix-blend-overlay" />
         {/* Deux éléments : seul le visible du breakpoint est monté avec sa source,
             l'attribut media n'existant pas sur <source> hors <picture>. */}
+        {/* Poster : la première image peinte est déjà celle de la DA, même si
+            la vidéo (2,7 Mo) n'a pas encore un seul octet — et elle reste
+            affichée si la lecture automatique est refusée. */}
         <video
           src="/landing/hero-vertical.mp4"
+          poster="/fonds/assemblee@1080.webp"
           autoPlay
           muted
           loop
@@ -29,6 +33,7 @@ export default function Decouvrir() {
         />
         <video
           src="/landing/hero-large.mp4"
+          poster="/fonds/assemblee.webp"
           autoPlay
           muted
           loop

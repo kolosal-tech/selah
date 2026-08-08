@@ -54,17 +54,17 @@ export default async function Room({
     <main className="flex flex-col gap-4">
       <div className="flex items-start justify-between">
         <div>
-          <Link href="/rooms" className="text-sm text-stone-500">
+          <Link href="/rooms" className="text-sm text-white/50 hover:text-white/80">
             ← Upper Room
           </Link>
-          <h1 className="text-2xl font-bold text-stone-900">{room.title}</h1>
-          <p className="text-stone-600">
+          <h1 className="text-2xl font-bold text-gradient-gold">{room.title}</h1>
+          <p className="text-white/70">
             {room.topic || "Prière libre"} · animée par @{room.profiles?.username}
           </p>
         </div>
         {room.host_id === user.id && !room.closed_at && (
           <form action={closePrayerRoom.bind(null, room.id)}>
-            <button className="rounded-full border border-stone-300 px-3 py-1 text-sm text-stone-600 hover:bg-stone-100">
+            <button className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-sm text-white/70 transition hover:bg-white/10 hover:text-white">
               Fermer
             </button>
           </form>
@@ -72,7 +72,7 @@ export default async function Room({
       </div>
 
       {room.closed_at ? (
-        <p className="rounded-2xl border border-stone-200 bg-white p-6 text-center text-stone-500">
+        <p className="glass-card p-6 text-center text-white/60">
           Cette veillée est terminée. Les messages restent lisibles.
         </p>
       ) : null}
