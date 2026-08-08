@@ -645,13 +645,13 @@ export function VerticalFeed({
               {/* Infos bas-gauche */}
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-5 pb-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] pt-20">
                 <div
-                  className={`max-w-[calc(100%-5rem)] space-y-3 ${
+                  className={`max-w-[calc(100%-5rem)] space-y-3 text-start ${
                     i === active ? "animate-arrive" : ""
                   }`}
                 >
                   <div>
                     <h3 className="text-[18px] font-bold tracking-tight text-white drop-shadow-md">
-                      @{v.username ?? m.commun.disciple} ✨
+                      <bdi>@{v.username ?? m.commun.disciple}</bdi> ✨
                     </h3>
                     {v.caption && (
                       <p className="mt-1.5 line-clamp-3 text-[17px] leading-snug text-white drop-shadow">
@@ -673,18 +673,18 @@ export function VerticalFeed({
                       </span>
                     )}
                   </div>
-                  <div className="flex w-[calc(100%+4.5rem)] items-center gap-2.5 rounded-2xl border border-white/15 bg-white/[0.14] px-3.5 py-2.5 backdrop-blur-xl">
+                  <div className="flex w-full items-center gap-2.5 rounded-2xl border border-white/15 bg-white/[0.14] px-3.5 py-2.5 backdrop-blur-xl">
                     <Music2 className="h-4 w-4 shrink-0 text-amber-200" />
-                    <span className="truncate text-sm text-white/95">
+                    <bdi className="truncate text-sm text-white/95">
                       {m.video.sonOriginal(v.username ?? m.commun.disciple)}
-                    </span>
+                    </bdi>
                   </div>
                 </div>
               </div>
 
               {/* Rail d'actions droit */}
               <div
-                className={`rail-verre absolute bottom-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] right-3 z-20 flex w-[74px] flex-col items-center gap-5 rounded-[40px] py-4 ${
+                className={`rail-verre absolute bottom-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] end-3 z-20 flex w-[74px] flex-col items-center gap-5 rounded-[40px] py-4 ${
                   i === active ? "animate-arrive" : ""
                 }`}
               >
@@ -846,7 +846,7 @@ export function VerticalFeed({
               <button
                 onClick={() => setOuverte(null)}
                 aria-label={m.video.fermerCommentaires}
-                className="absolute right-0 rounded-full bg-white/10 p-1.5 text-white/70 hover:text-white"
+                className="absolute end-0 rounded-full bg-white/10 p-1.5 text-white/70 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -882,7 +882,7 @@ export function VerticalFeed({
                   </span>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white/90">@{c.username}</span>
+                      <bdi className="text-xs font-bold text-white/90">@{c.username}</bdi>
                       <span className="text-[10px] text-white/40">{ageLabel(c.created_at, m)}</span>
                     </div>
                     <p className="mt-0.5 whitespace-pre-wrap text-xs leading-normal text-white/80">
