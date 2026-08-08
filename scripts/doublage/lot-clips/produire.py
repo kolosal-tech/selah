@@ -37,6 +37,8 @@ NAPPE = RACINE.parents[1] / "public/sons/ambiance-selah.m4a"
 SARAH = "EXAVITQu4vr4xnSDxMaL"
 ROGER = "CwhRBWXzGAHq8TQ4Fs17"
 VOIX = {"13": SARAH, "14": ROGER, "15": ROGER, "16": SARAH, "17": SARAH, "18": ROGER}
+LANGUES = ["fr", "en", "es", "pt", "it", "de", "ru", "ar", "zh", "ja", "ko"]
+CJC = {"zh", "ja", "ko"}
 
 RALENTI = 1.8    # le plan de 10 s devient 18 s
 FONDU = 1.5      # recouvrement du raccord sur soi-même
@@ -63,29 +65,43 @@ def duree(f: pathlib.Path) -> float:
          "-of", "csv=p=0", str(f)], capture_output=True, text=True, check=True).stdout)
 
 
-def etape_voix(unites: dict, sortie: pathlib.Path) -> None:
+def textes(unites: dict, lang: str) -> dict:
+    if lang == "fr":
+        return unites
+    trad = json.load(open(ICI / "traductions.json"))
+    return {u: trad[u][lang] for u in unites if lang in trad.get(u, {})}
+
+
+def etape_voix(unites: dict, sortie: pathlib.Path, langues: list[str]) -> None:
     cle = cle_eleven()
-    for u, bloc in unites.items():
+    for lang in langues:
+        for u, bloc in textes(unites, lang).items():
+            synthetiser(cle, lang, u, bloc["narration"], sortie / lang)
+
+
+def synthetiser(cle: str, lang: str, u: str, texte: str, sortie: pathlib.Path) -> None:
+    if True:
         dest = sortie / f"{u}.mp3"
         if dest.exists() and dest.stat().st_size > 10_000:
-            print(f"{u} déjà là", flush=True)
-            continue
+            print(f"{lang}/{u} déjà là", flush=True)
+            return
         dest.parent.mkdir(parents=True, exist_ok=True)
         req = urllib.request.Request(
             f"https://api.elevenlabs.io/v1/text-to-speech/{VOIX[u]}"
             "?output_format=mp3_44100_128",
             data=json.dumps({
-                "text": bloc["narration"],
+                "text": texte,
                 "model_id": "eleven_v3",
-                "language_code": "fr",
+                "language_code": lang,
                 "voice_settings": {"stability": 0.5, "similarity_boost": 0.75,
-                                   "use_speaker_boost": True, "speed": 1.1},
+                                   "use_speaker_boost": True,
+                                   "speed": 1.05 if lang in CJC else 1.1},
             }).encode(),
             headers={"xi-api-key": cle, "Content-Type": "application/json"},
             method="POST")
         with urllib.request.urlopen(req, timeout=180) as r:
             dest.write_bytes(r.read())
-        print(f"{u} voix ok ({dest.stat().st_size // 1024} Ko)", flush=True)
+        print(f"{lang}/{u} voix ok ({dest.stat().st_size // 1024} Ko)", flush=True)
 
 
 def voile(dossier: pathlib.Path) -> pathlib.Path:
@@ -105,22 +121,31 @@ def voile(dossier: pathlib.Path) -> pathlib.Path:
 
 
 def etape_montage(unites: dict, voix_dir: pathlib.Path, sortie: pathlib.Path,
-                  travail: pathlib.Path) -> None:
-    for u, bloc in unites.items():
+                  travail: pathlib.Path, langues: list[str]) -> None:
+    for lang in langues:
+        for u, bloc in textes(unites, lang).items():
+            monter(lang, u, bloc, unites[u]["clip"], voix_dir / lang,
+                   sortie / lang, travail)
+
+
+def monter(lang: str, u: str, bloc: dict, clip_num: int, voix_dir: pathlib.Path,
+           sortie: pathlib.Path, travail: pathlib.Path) -> None:
+    if True:
         dest = sortie / f"{u}.mp4"
         if dest.exists() and dest.stat().st_size > 100_000:
-            print(f"{u} déjà monté", flush=True)
-            continue
+            print(f"{lang}/{u} déjà monté", flush=True)
+            return
         voix = voix_dir / f"{u}.mp3"
-        clip = CLIPS / f"{bloc['clip']}.mp4"
+        clip = CLIPS / f"{clip_num}.mp4"
         if not voix.exists() or not clip.exists():
-            print(f"{u} : source absente, ignorée", flush=True)
-            continue
+            print(f"{lang}/{u} : source absente, ignorée", flush=True)
+            return
 
-        pv = travail / f"verset-{u}.png"
-        pc = travail / f"cloture-{u}.png"
-        planches.planche_verset(bloc["verset"], bloc["verset_fr"], pv, "fr")
-        planches.planche_cloture(bloc["cloture"], pc, "fr")
+        reference = bloc.get("ref") or bloc["verset_fr"]
+        pv = travail / f"verset-{lang}-{u}.png"
+        pc = travail / f"cloture-{lang}-{u}.png"
+        planches.planche_verset(bloc["verset"], reference, pv, lang)
+        planches.planche_cloture(bloc["cloture"], pc, lang)
 
         dv = duree(voix)
         total = AMORCE + dv + QUEUE
@@ -175,7 +200,7 @@ def etape_montage(unites: dict, voix_dir: pathlib.Path, sortie: pathlib.Path,
              "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-pix_fmt", "yuv420p",
              "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(dest)],
             check=True)
-        print(f"{u} {duree(dest):.1f}s {dest.stat().st_size // 1024} Ko", flush=True)
+        print(f"{lang}/{u} {duree(dest):.1f}s {dest.stat().st_size // 1024} Ko", flush=True)
 
 
 def main() -> None:
@@ -183,12 +208,13 @@ def main() -> None:
     base = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else ICI / "sortie"
     unites = {k: v for k, v in json.load(open(ICI / "narrations-fr.json")).items()
               if not k.startswith("_")}
+    langues = sys.argv[3:] or LANGUES
     if etape == "voix":
-        etape_voix(unites, base / "voix")
+        etape_voix(unites, base / "voix", langues)
     elif etape == "montage":
-        etape_montage(unites, base / "voix", base / "videos", base / "planches")
+        etape_montage(unites, base / "voix", base / "videos", base / "planches", langues)
     else:
-        sys.exit("usage : produire.py voix|montage [dossier]")
+        sys.exit("usage : produire.py voix|montage [dossier] [langues…]")
 
 
 if __name__ == "__main__":
