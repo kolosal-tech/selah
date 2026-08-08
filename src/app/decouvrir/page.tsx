@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Sparkles, HeartHandshake, Flame, Globe2, Moon, Play } from "lucide-react";
 import { getMessages } from "@/i18n/server";
+import { LOCALES, NOM_LANGUE } from "@/i18n/config";
 import { SelecteurLangue } from "@/app/selecteur-langue";
 
 export default async function Decouvrir() {
@@ -106,6 +107,22 @@ export default async function Decouvrir() {
             <span>{m.auth.seConnecter}</span>
           </Link>
         </div>
+
+        {/* La promesse « sans barrière de langue » ne se raconte pas : on
+            montre les langues, chacune écrite dans sa propre écriture. Aucun
+            texte à traduire, donc rien qui puisse dériver d'une langue à
+            l'autre. */}
+        <ul className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-2">
+          {LOCALES.map((l) => (
+            <li
+              key={l}
+              lang={l}
+              className="rounded-full border border-white/15 bg-white/[0.07] px-3 py-1 text-[13px] text-white/75 backdrop-blur-xl"
+            >
+              {NOM_LANGUE[l]}
+            </li>
+          ))}
+        </ul>
 
         <p className="text-xs text-white/40 italic">{m.decouvrir.versetPied}</p>
       </div>
