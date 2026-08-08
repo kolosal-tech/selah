@@ -17,22 +17,24 @@ import {
   ChevronLeft,
   Home,
 } from "lucide-react";
+import { useMessages } from "@/i18n/client";
+import type { Messages as M } from "@/i18n/messages";
 
-const NAV = [
-  { href: "/feed", label: "Fil", icon: Rss },
-  { href: "/", label: "Vidéos", icon: PlaySquare },
-  { href: "/prayer", label: "Prière", icon: HeartHandshake },
-  { href: "/rooms", label: "Direct", icon: Radio },
-  { href: "/challenges", label: "Défis", icon: Trophy },
+const NAV = (m: M) => [
+  { href: "/feed", label: m.nav.fil, icon: Rss },
+  { href: "/", label: m.nav.videos, icon: PlaySquare },
+  { href: "/prayer", label: m.nav.priere, icon: HeartHandshake },
+  { href: "/rooms", label: m.nav.direct, icon: Radio },
+  { href: "/challenges", label: m.nav.defis, icon: Trophy },
 ];
 
-const NAV_PLUS = [
-  { href: "/map", label: "Carte d'intercession", icon: Globe },
-  { href: "/mentorship", label: "Paul & Timothée", icon: Users },
-  { href: "/churches", label: "Annuaire des églises", icon: Building2 },
-  { href: "/pastor", label: "Dashboard pasteur", icon: LayoutDashboard },
-  { href: "/moderation", label: "Modération", icon: ShieldCheck },
-  { href: "/sabbath", label: "Mode Sabbat 🕊️", icon: Moon },
+const NAV_PLUS = (m: M) => [
+  { href: "/map", label: m.nav.carte, icon: Globe },
+  { href: "/mentorship", label: m.nav.mentorat, icon: Users },
+  { href: "/churches", label: m.nav.eglises, icon: Building2 },
+  { href: "/pastor", label: m.nav.pasteur, icon: LayoutDashboard },
+  { href: "/moderation", label: m.nav.moderation, icon: ShieldCheck },
+  { href: "/sabbath", label: m.nav.sabbat, icon: Moon },
 ];
 
 /** Logotype « Selah » : blanc, italique fantaisiste, présent sur chaque écran. */
@@ -45,31 +47,32 @@ export function MotSelah({ taille = 34 }: { taille?: number }) {
 }
 
 /** Barre de retour contextuelle : sur les écrans secondaires (hors onglets
- *  principaux), un chevron « retour » + un raccourci accueil, comme la vidéo. */
+ *  principaux), un chevron « retour » + un raccourci accueil. */
 export function BarreRetour() {
   const pathname = usePathname();
   const router = useRouter();
-  const estOnglet = NAV.some((n) => n.href === pathname);
+  const m = useMessages();
+  const estOnglet = NAV(m).some((n) => n.href === pathname);
   if (estOnglet) return null;
 
-  const page = NAV_PLUS.find((n) => n.href === pathname);
+  const page = NAV_PLUS(m).find((n) => n.href === pathname);
 
   return (
     <div className="mb-4 flex items-center gap-3">
       <button
         onClick={() => router.back()}
-        aria-label="Revenir en arrière"
+        aria-label={m.commun.retour}
         className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white/80 backdrop-blur-xl transition hover:bg-white/20"
       >
-        <ChevronLeft className="h-5 w-5" />
+        <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
       </button>
       {page && (
         <span className="text-sm font-semibold text-white/80">{page.label}</span>
       )}
       <Link
         href="/"
-        aria-label="Retour à l'accueil"
-        className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white/80 backdrop-blur-xl transition hover:bg-white/20"
+        aria-label={m.commun.accueil}
+        className="ms-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white/80 backdrop-blur-xl transition hover:bg-white/20"
       >
         <Home className="h-[18px] w-[18px]" />
       </Link>
@@ -79,6 +82,7 @@ export function BarreRetour() {
 
 export function FloatingPillNav({ chips = true }: { chips?: boolean }) {
   const pathname = usePathname();
+  const m = useMessages();
 
   return (
     <>
@@ -87,7 +91,7 @@ export function FloatingPillNav({ chips = true }: { chips?: boolean }) {
       {chips && (
         <div className="mb-6 overflow-x-auto no-scrollbar py-1">
           <div className="flex items-center gap-2 whitespace-nowrap px-1">
-            {NAV_PLUS.map((item) => {
+            {NAV_PLUS(m).map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (
@@ -111,7 +115,7 @@ export function FloatingPillNav({ chips = true }: { chips?: boolean }) {
 
       {/* Pilule de navigation flottante */}
       <nav className="fixed inset-x-4 bottom-6 z-50 mx-auto flex max-w-[430px] items-center justify-between rounded-full border border-white/20 bg-slate-950/85 px-4 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
-        {NAV.map((item) => {
+        {NAV(m).map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
 

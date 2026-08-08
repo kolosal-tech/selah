@@ -3,6 +3,7 @@ import { createChallenge, checkInChallenge } from "@/app/actions";
 import { defiEnCours, jourDuDefi, progression } from "@/lib/challenge";
 import { isoDay } from "@/lib/streak";
 import { Trophy, CheckCircle, Plus, Users, ChevronRight, Check } from "lucide-react";
+import { getMessages } from "@/i18n/server";
 
 export default async function Challenges() {
   const supabase = await supabaseServer();
@@ -10,6 +11,7 @@ export default async function Challenges() {
     data: { user },
   } = await supabase.auth.getUser();
   const aujourdhui = isoDay(new Date());
+  const m = await getMessages();
 
   const [{ data: defis }, { data: pointages }] = await Promise.all([
     supabase.from("challenges").select("*").order("starts_on", { ascending: false }).limit(30),
@@ -47,7 +49,7 @@ export default async function Challenges() {
 
   return (
     <main className="flex flex-col gap-5">
-      <h1 className="text-3xl font-extrabold tracking-tight text-white">Défis</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight text-white">{m.defis.titre}</h1>
 
       {/* Défi principal — carte dorée de la maquette */}
       {principal && (
@@ -57,7 +59,7 @@ export default async function Challenges() {
               {principal.title}
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap text-sm text-amber-300">
-              {defiEnCours(principal, aujourdhui) ? "En cours" : "Terminé"}
+              {defiEnCours(principal, aujourdhui) ? m.defis.enCours : m.defis.termine}
               <ChevronRight className="h-4 w-4" />
             </span>
           </div>
@@ -73,7 +75,7 @@ export default async function Challenges() {
 
           <div className="mt-3 flex items-center justify-between">
             <span className="text-sm text-white/70">
-              Jour {jourDuDefi(principal, aujourdhui)} / {principal.days}
+              {m.defis.jourSur(jourDuDefi(principal, aujourdhui), principal.days)}
             </span>
             <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/60">
               <Users className="h-3.5 w-3.5 text-amber-400" />
@@ -86,7 +88,7 @@ export default async function Challenges() {
       {/* Défis quotidiens — pastilles des 3 derniers jours */}
       {principal && (
         <section className="rounded-[20px] border border-white/10 bg-white/5 px-[18px] py-4">
-          <h2 className="mb-3 text-[17px] font-bold text-white">Défis quotidiens</h2>
+          <h2 className="mb-3 text-[17px] font-bold text-white">{m.defis.quotidiens}</h2>
           <div className="flex gap-2.5">
             {troisDerniers.map((j) => (
               <span
@@ -116,19 +118,19 @@ export default async function Challenges() {
           name="title"
           required
           minLength={3}
-          placeholder="Titre du défi (ex. 21 jours de prière pour les nations)"
+          placeholder={m.defis.titrePlaceholder}
           className="glass-input w-full rounded-2xl p-3.5 text-sm placeholder:text-white/40"
         />
         <textarea
           name="description"
           rows={2}
-          placeholder="Ce à quoi on s'engage chaque jour…"
+          placeholder={m.defis.descriptionPlaceholder}
           className="glass-input w-full resize-none rounded-2xl p-3.5 text-sm placeholder:text-white/40"
         />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-white/60">Jours :</span>
+              <span className="text-xs font-medium text-white/60">{m.defis.joursLabel}</span>
               <input
                 name="days"
                 type="number"
@@ -148,7 +150,7 @@ export default async function Challenges() {
 
           <button className="btn-paradise flex items-center gap-2 rounded-full px-6 py-2.5 text-xs font-bold transition hover:scale-105">
             <Plus className="h-4 w-4" />
-            <span>Lancer le défi</span>
+            <span>{m.defis.lancer}</span>
           </button>
         </div>
       </form>
@@ -183,10 +185,10 @@ export default async function Challenges() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-amber-300">
-                    {enCours ? `Jour ${jour} / ${d.days}` : jour === 0 ? "À venir" : "Terminé"}
+                    {enCours ? m.defis.jourSur(jour, d.days) : jour === 0 ? m.defis.aVenir : m.defis.termine}
                   </span>
                   <span className="text-white/60">
-                    Ton avancement : <strong className="text-emerald-400">{faits} / {d.days} jours</strong>
+                    {m.defis.avancement} <strong className="text-emerald-400">{m.defis.avancementJours(faits, d.days)}</strong>
                   </span>
                 </div>
 
@@ -209,7 +211,7 @@ export default async function Challenges() {
                     }`}
                   >
                     <CheckCircle className={`h-4 w-4 ${isDoneToday ? "text-emerald-400" : "text-amber-300"}`} />
-                    <span>{isDoneToday ? "Fait aujourd'hui ✨" : "Je l'ai fait aujourd'hui"}</span>
+                    <span>{isDoneToday ? m.defis.faitAujourdhui : m.defis.jeLaiFait}</span>
                   </button>
                 </form>
               )}
@@ -221,7 +223,7 @@ export default async function Challenges() {
           <div className="glass-card space-y-2 p-10 text-center">
             <Trophy className="mx-auto h-10 w-10 text-amber-400 opacity-70" />
             <p className="text-sm font-medium text-white/70">
-              Aucun défi disponible pour l&apos;instant. Sois l&apos;étincelle qui lance le premier ! 🔥
+              {m.defis.vide}
             </p>
           </div>
         )}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { publishVideo } from "@/app/actions";
+import { useMessages } from "@/i18n/client";
 import {
   Camera,
   Check,
@@ -28,6 +29,7 @@ type Mode = "choix" | "camera" | "apercu" | "envoi" | "publie";
  * poster dans le feed.
  */
 export function UploadForm({ userId }: { userId: string }) {
+  const m = useMessages();
   const [mode, setMode] = useState<Mode>("choix");
   const [erreur, setErreur] = useState("");
   const [cameraDispo, setCameraDispo] = useState(true);
@@ -105,7 +107,7 @@ export function UploadForm({ userId }: { userId: string }) {
       });
     } catch {
       setCameraDispo(false);
-      setErreur("Caméra inaccessible — dépose un fichier à la place.");
+      setErreur(m.studio.cameraInaccessible);
     }
   }
 
@@ -143,11 +145,11 @@ export function UploadForm({ userId }: { userId: string }) {
     setErreur("");
     if (!fichier) return;
     if (!TYPES_OK.includes(fichier.type)) {
-      setErreur("Format accepté : MP4, WebM ou MOV.");
+      setErreur(m.studio.formatRefuse);
       return;
     }
     if (fichier.size > MAX_OCTETS) {
-      setErreur("Vidéo trop lourde (50 Mo maximum).");
+      setErreur(m.studio.tropLourde);
       return;
     }
     retenir(fichier, 0);
@@ -200,7 +202,7 @@ export function UploadForm({ userId }: { userId: string }) {
       .upload(cheminVideo, blob, { contentType: blob.type });
     if (error) {
       setMode("apercu");
-      setErreur(`Envoi refusé : ${error.message}`);
+      setErreur(m.studio.envoiRefuse(error.message));
       return;
     }
 
@@ -218,7 +220,7 @@ export function UploadForm({ userId }: { userId: string }) {
     const resultat = await publishVideo(formData);
     if (!resultat?.ok) {
       setMode("apercu");
-      setErreur("Publication refusée. Réessaie, ou reconnecte-toi.");
+      setErreur(m.studio.publicationRefusee);
       return;
     }
     if (urlApercu) URL.revokeObjectURL(urlApercu);
@@ -242,7 +244,7 @@ export function UploadForm({ userId }: { userId: string }) {
         <div className="flex flex-col items-center gap-4 p-8 text-center">
           <Video className="h-10 w-10 text-amber-400" />
           <p className="text-sm text-white/80">
-            Une minute pour raconter ce que Dieu a fait. Vertical, court, vrai.
+            {m.studio.sousTitre}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             {cameraDispo && (
@@ -251,7 +253,7 @@ export function UploadForm({ userId }: { userId: string }) {
  className="btn-paradise flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition hover:scale-105"
               >
                 <Camera className="h-4 w-4" />
-                <span>Enregistrer</span>
+                <span>{m.studio.enregistrer}</span>
               </button>
             )}
             <button
@@ -259,13 +261,12 @@ export function UploadForm({ userId }: { userId: string }) {
               className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-xl transition hover:bg-white/20"
             >
               <FolderOpen className="h-4 w-4" />
-              <span>Choisir un fichier</span>
+              <span>{m.studio.choisirFichier}</span>
             </button>
           </div>
           {!cameraDispo && (
             <p className="text-xs text-white/50">
-              Caméra indisponible sur ce navigateur — dépose un fichier MP4,
-              WebM ou MOV.
+              {m.studio.cameraIndispo}
             </p>
           )}
           <input
@@ -302,11 +303,11 @@ export function UploadForm({ userId }: { userId: string }) {
                   }}
                   className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-xl"
                 >
-                  Annuler
+                  {m.commun.annuler}
                 </button>
                 <button
                   onClick={demarrerEnregistrement}
-                  aria-label="Démarrer l'enregistrement"
+                  aria-label={m.studio.demarrer}
                   className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-rose-500 shadow-2xl transition hover:scale-105"
                 >
                   <span className="h-6 w-6 rounded-full bg-white/20" />
@@ -315,7 +316,7 @@ export function UploadForm({ userId }: { userId: string }) {
             ) : (
               <button
                 onClick={() => recorderRef.current?.stop()}
-                aria-label="Arrêter l'enregistrement"
+                aria-label={m.studio.arreter}
                 className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-rose-600 shadow-2xl"
               >
                 <Square className="h-6 w-6 fill-white text-white" />
@@ -346,7 +347,7 @@ export function UploadForm({ userId }: { userId: string }) {
                 name="caption"
                 rows={2}
                 maxLength={500}
-                placeholder="Ce que Dieu a fait…"
+                placeholder={m.studio.captionPlaceholder}
                 className="glass-input w-full resize-none rounded-xl p-3 text-sm placeholder:text-white/40"
               />
               <div className="flex flex-wrap items-center gap-2">
@@ -354,15 +355,15 @@ export function UploadForm({ userId }: { userId: string }) {
                   name="type"
                   className="glass-input rounded-xl p-2.5 text-sm [&>option]:bg-slate-900"
                 >
-                  <option value="temoignage">🔥 Témoignage</option>
-                  <option value="exhortation">💬 Exhortation</option>
-                  <option value="enseignement">📖 Enseignement</option>
-                  <option value="louange">🎵 Louange</option>
+                  <option value="temoignage">{m.studio.typeTemoignage}</option>
+                  <option value="exhortation">{m.studio.typeExhortation}</option>
+                  <option value="enseignement">{m.studio.typeEnseignement}</option>
+                  <option value="louange">{m.studio.typeLouange}</option>
                 </select>
                 <input
                   name="verse_ref"
                   maxLength={80}
-                  placeholder="Verset (optionnel)"
+                  placeholder={m.studio.versetPlaceholder}
                   className="glass-input min-w-0 flex-1 rounded-xl p-2.5 text-sm placeholder:text-white/40"
                 />
               </div>
@@ -374,7 +375,7 @@ export function UploadForm({ userId }: { userId: string }) {
                   className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-xl disabled:opacity-50"
                 >
                   <RefreshCcw className="h-4 w-4" />
-                  <span>Reprendre</span>
+                  <span>{m.studio.reprendre}</span>
                 </button>
                 <button
                   disabled={mode === "envoi"}
@@ -383,10 +384,10 @@ export function UploadForm({ userId }: { userId: string }) {
                   {mode === "envoi" ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Envoi…</span>
+                      <span>{m.studio.envoi}</span>
                     </>
                   ) : (
-                    <span>Publier</span>
+                    <span>{m.commun.publier}</span>
                   )}
                 </button>
               </div>
@@ -401,19 +402,19 @@ export function UploadForm({ userId }: { userId: string }) {
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
             <Check className="h-7 w-7" />
           </span>
-          <p className="font-bold text-white">Publiée. Gloire à Dieu !</p>
+          <p className="font-bold text-white">{m.studio.publiee}</p>
           <div className="flex gap-3">
             <Link
               href="/"
  className="btn-paradise rounded-full px-6 py-2.5 text-sm font-bold "
             >
-              Voir le feed
+              {m.studio.voirFeed}
             </Link>
             <button
               onClick={recommencer}
               className="rounded-full border border-white/20 bg-white/10 px-6 py-2.5 text-sm font-semibold text-white backdrop-blur-xl"
             >
-              En publier une autre
+              {m.studio.publierAutre}
             </button>
           </div>
         </div>

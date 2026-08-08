@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { useMessages } from "@/i18n/client";
 
 export interface Message {
   id: string;
@@ -39,6 +40,7 @@ export function RoomLive({
   username: string;
   initial: Message[];
 }) {
+  const txt = useMessages();
   const [messages, setMessages] = useState<Message[]>(initial);
   const [texte, setTexte] = useState("");
   const [presents, setPresents] = useState(1);
@@ -71,11 +73,11 @@ export function RoomLive({
           body: m.body,
           created_at: m.created_at,
           author_id: m.author_id,
-          auteur: auteur ?? "inconnu",
+          auteur: auteur ?? txt.commun.inconnu,
         };
       }),
     );
-  }, [roomId, ajouter]);
+  }, [roomId, ajouter, txt]);
 
   useEffect(() => {
     const supabase = supabaseBrowser();
@@ -116,7 +118,7 @@ export function RoomLive({
           (charge) => {
             const m = charge.new as Omit<Message, "auteur">;
             ajouter([
-              { ...m, auteur: m.author_id === userId ? username : "un frère" },
+              { ...m, auteur: m.author_id === userId ? username : txt.rooms.unFrere },
             ]);
           },
         )
@@ -154,7 +156,7 @@ export function RoomLive({
       if (repli) clearInterval(repli);
       if (canal) supabase.removeChannel(canal);
     };
-  }, [roomId, userId, username, ajouter, relire]);
+  }, [roomId, userId, username, ajouter, relire, txt]);
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -169,7 +171,7 @@ export function RoomLive({
       .from("room_messages")
       .insert({ room_id: roomId, author_id: userId, body: corps.slice(0, 1000) });
     if (error) {
-      setErreur("Message non envoyé. Réessaie.");
+      setErreur(txt.rooms.messageEchec);
       setTexte(corps);
       return;
     }
@@ -179,17 +181,15 @@ export function RoomLive({
 
   const etatLien =
     lien === "direct"
-      ? "● en direct"
+      ? txt.rooms.lienDirect
       : lien === "rafraichissement"
-        ? "↻ rafraîchissement toutes les 4 s"
-        : "… connexion";
+        ? txt.rooms.lienRafraichissement
+        : txt.rooms.lienConnexion;
 
   return (
     <div className="flex flex-col gap-3">
       <p className="flex items-center gap-3 text-sm text-white/60">
-        <span>
-          🕯️ {presents} {presents > 1 ? "personnes présentes" : "personne présente"}
-        </span>
+        <span>🕯️ {txt.rooms.presents(presents)}</span>
         <span className={lien === "direct" ? "text-rose-400" : "text-white/40"}>
           {etatLien}
         </span>
@@ -198,7 +198,7 @@ export function RoomLive({
       <div className="glass-card flex max-h-[55vh] flex-col gap-2 overflow-y-auto p-4">
         {messages.length === 0 && (
           <p className="text-center text-sm text-white/45">
-            La salle est silencieuse. Ouvre la prière.
+            {txt.rooms.salleSilencieuse}
           </p>
         )}
         {messages.map((m) => (
@@ -227,12 +227,12 @@ export function RoomLive({
         <input
           value={texte}
           onChange={(e) => setTexte(e.target.value)}
-          placeholder="Prie, exhorte, cite un verset…"
+          placeholder={txt.rooms.messagePlaceholder}
           maxLength={1000}
           className="glass-input flex-1 rounded-xl p-3 text-sm placeholder:text-white/40"
         />
         <button className="btn-paradise rounded-full px-5 transition hover:scale-105">
-          Envoyer
+          {txt.commun.envoyer}
         </button>
       </form>
     </div>

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { isSabbathActive } from "@/lib/sabbath";
+import { getLocale } from "@/i18n/server";
 import { VerticalFeed, type FeedVideo } from "./vertical-feed";
 
 /**
@@ -69,6 +70,24 @@ export default async function Accueil({
         .maybeSingle();
       if (cible) liste = [cible as FeedVideo, ...liste];
     }
+  }
+
+  // Légende et référence de verset dans la langue de l'utilisateur, quand la
+  // traduction existe (les vidéos d'origine sont en français).
+  const locale = await getLocale();
+  if (locale !== "fr" && liste.length > 0) {
+    const { data: traductions } = await supabase
+      .from("video_translations")
+      .select("video_id, caption, verse_ref")
+      .eq("lang", locale)
+      .in("video_id", liste.map((v) => v.id));
+    const parId = new Map((traductions ?? []).map((t) => [t.video_id, t]));
+    liste = liste.map((v) => {
+      const t = parId.get(v.id);
+      return t
+        ? { ...v, caption: t.caption ?? v.caption, verse_ref: t.verse_ref ?? v.verse_ref }
+        : v;
+    });
   }
 
   return (

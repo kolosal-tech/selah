@@ -1,5 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { Globe2, HeartHandshake } from "lucide-react";
+import { getMessages } from "@/i18n/server";
 
 const FLAGS: Record<string, string> = {};
 function flag(cc: string) {
@@ -13,6 +14,7 @@ function flag(cc: string) {
 
 export default async function IntercessionMap() {
   const supabase = await supabaseServer();
+  const m = await getMessages();
   const { data: rows } = await supabase
     .from("intercession_map")
     .select("*")
@@ -27,10 +29,10 @@ export default async function IntercessionMap() {
       <div>
         <div className="flex items-center gap-2">
           <Globe2 className="h-6 w-6 text-emerald-400" />
-          <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">Carte d&apos;intercession</h1>
+          <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">{m.carte.titre}</h1>
         </div>
         <p className="mt-1 text-sm text-white/70">
-          <strong className="text-gradient-paradise font-extrabold text-base">{total}</strong> prières portées ces dernières 24 h à travers le monde.
+          <strong className="text-gradient-paradise font-extrabold text-base">{total}</strong> {m.carte.sousTitre}
         </p>
       </div>
 
@@ -47,7 +49,7 @@ export default async function IntercessionMap() {
             <div className="flex-1 space-y-1">
               <div className="flex justify-between text-xs font-semibold">
                 <span className="text-white">{r.country}</span>
-                <span className="text-amber-300 font-bold">{r.prayers_24h} prières</span>
+                <span className="text-amber-300 font-bold">{m.carte.prieres(r.prayers_24h)}</span>
               </div>
               <div className="h-2.5 w-full rounded-full bg-black/40 overflow-hidden p-0.5 border border-white/10">
                 <div
@@ -62,7 +64,7 @@ export default async function IntercessionMap() {
           <div className="glass-card p-10 text-center space-y-2">
             <HeartHandshake className="h-10 w-10 text-amber-400 mx-auto opacity-70" />
             <p className="text-sm font-medium text-white/70">
-              La carte s&apos;allumera dès la première prière. Va sur le mur de prière. 🌍
+              {m.carte.vide}
             </p>
           </div>
         )}

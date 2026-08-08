@@ -31,6 +31,8 @@ import {
   Check,
 } from "lucide-react";
 import { FloatingPillNav, MotSelah } from "./nav-components";
+import { useLocale, useMessages } from "@/i18n/client";
+import type { Messages } from "@/i18n/messages";
 
 export type FeedVideo = {
   id: string;
@@ -58,15 +60,15 @@ type Commentaire = {
   username: string;
 };
 
-const TYPE_CONFIG: Record<
+const TYPE_STYLE: Record<
   string,
-  { label: string; bg: string; icon: React.ComponentType<{ className?: string }> }
+  { bg: string; icon: React.ComponentType<{ className?: string }> }
 > = {
-  temoignage: { label: "Témoignage", bg: "from-amber-500 to-rose-500", icon: Flame },
-  exhortation: { label: "Exhortation", bg: "from-emerald-500 to-teal-600", icon: Sparkles },
-  priere: { label: "Prière", bg: "from-cyan-500 to-blue-600", icon: HeartHandshake },
-  enseignement: { label: "Enseignement", bg: "from-blue-500 to-indigo-600", icon: BookOpen },
-  louange: { label: "Louange", bg: "from-purple-500 to-pink-600", icon: Music2 },
+  temoignage: { bg: "from-amber-500 to-rose-500", icon: Flame },
+  exhortation: { bg: "from-emerald-500 to-teal-600", icon: Sparkles },
+  priere: { bg: "from-cyan-500 to-blue-600", icon: HeartHandshake },
+  enseignement: { bg: "from-blue-500 to-indigo-600", icon: BookOpen },
+  louange: { bg: "from-purple-500 to-pink-600", icon: Music2 },
 };
 
 const PAGE = 24;
@@ -79,14 +81,14 @@ function formatCompte(n: number): string {
   return String(n);
 }
 
-function ageLabel(iso: string): string {
+function ageLabel(iso: string, m: Messages): string {
   const ms = Date.now() - new Date(iso).getTime();
   const min = Math.floor(ms / 60000);
-  if (min < 1) return "À l'instant";
-  if (min < 60) return `${min} min`;
+  if (min < 1) return m.temps.instant;
+  if (min < 60) return m.temps.minutes(min);
   const h = Math.floor(min / 60);
-  if (h < 24) return `${h} h`;
-  return `${Math.floor(h / 24)} j`;
+  if (h < 24) return m.temps.heures(h);
+  return m.temps.jours(Math.floor(h / 24));
 }
 
 export function VerticalFeed({
@@ -105,6 +107,8 @@ export function VerticalFeed({
   erreurInitiale?: boolean;
 }) {
   const router = useRouter();
+  const m = useMessages();
+  const locale = useLocale();
   const [videos, setVideos] = useState(initialVideos);
   const [active, setActive] = useState(0);
   const [muted, setMuted] = useState(true);
@@ -246,19 +250,33 @@ export function VerticalFeed({
       .order("rang_auteur", { ascending: true })
       .order("score", { ascending: false })
       .range(depuis, depuis + PAGE - 1)
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         chargementRef.current = false;
         if (error) return; // on ne conclut pas « fin » : retentera au prochain passage
-        const nouvelles = (data ?? []) as FeedVideo[];
+        let nouvelles = (data ?? []) as FeedVideo[];
         if (nouvelles.length < PAGE) setFin(true);
-        if (nouvelles.length > 0) {
-          setVideos((prev) => {
-            const vus = new Set(prev.map((v) => v.id));
-            return [...prev, ...nouvelles.filter((v) => !vus.has(v.id))];
+        if (nouvelles.length === 0) return;
+        // Même traitement que le serveur : légende et référence traduites.
+        if (locale !== "fr") {
+          const { data: traductions } = await supabaseBrowser()
+            .from("video_translations")
+            .select("video_id, caption, verse_ref")
+            .eq("lang", locale)
+            .in("video_id", nouvelles.map((v) => v.id));
+          const parId = new Map((traductions ?? []).map((t) => [t.video_id, t]));
+          nouvelles = nouvelles.map((v) => {
+            const t = parId.get(v.id);
+            return t
+              ? { ...v, caption: t.caption ?? v.caption, verse_ref: t.verse_ref ?? v.verse_ref }
+              : v;
           });
         }
+        setVideos((prev) => {
+          const vus = new Set(prev.map((v) => v.id));
+          return [...prev, ...nouvelles.filter((v) => !vus.has(v.id))];
+        });
       });
-  }, [active, videos.length, fin]);
+  }, [active, videos.length, fin, locale]);
 
   // Flèches clavier.
   useEffect(() => {
@@ -364,14 +382,14 @@ export function VerticalFeed({
   async function prier(v: FeedVideo) {
     if (exigeCompte()) return;
     if (prie.has(v.id)) {
-      afficherToast("Tu portes déjà cette vidéo dans la prière 🙏");
+      afficherToast(m.video.dejaPrie);
       return;
     }
     setPrie((prev) => new Set(prev).add(v.id));
     setPrayCounts((prev) => ({ ...prev, [v.id]: nbPrieres(v) + 1 }));
     setHalo(v.id);
     setTimeout(() => setHalo(null), 1500);
-    afficherToast("✨ Prière envoyée ✨");
+    afficherToast(m.video.priereEnvoyee);
     let pris = false;
     try {
       pris = Boolean((await prayForVideo(v.id))?.ok);
@@ -383,7 +401,7 @@ export function VerticalFeed({
         return s;
       });
       setPrayCounts((prev) => ({ ...prev, [v.id]: nbPrieres(v) }));
-      afficherToast("La prière n'a pas pu être enregistrée");
+      afficherToast(m.video.priereEchec);
     }
   }
 
@@ -409,13 +427,13 @@ export function VerticalFeed({
         return s;
       });
     } else if (!suivait) {
-      afficherToast(`Tu suis @${v.username ?? "ce frère"}`);
+      afficherToast(m.video.tuSuis(v.username ?? m.commun.frere));
     }
   }
 
   async function partager(v: FeedVideo) {
     const url = `${window.location.origin}/?v=${v.id}`;
-    const titre = v.caption || "Un témoignage sur Selah";
+    const titre = v.caption || m.video.partageTitre;
     try {
       if (navigator.share) {
         await navigator.share({ title: titre, url });
@@ -435,9 +453,9 @@ export function VerticalFeed({
     setSignalee((prev) => new Set(prev).add(v.id));
     try {
       const r = await reportVideo(v.id);
-      afficherToast(r?.ok ? "Signalement transmis aux modérateurs" : "Signalement impossible");
+      afficherToast(r?.ok ? m.video.signalementOk : m.video.signalementEchec);
     } catch {
-      afficherToast("Signalement impossible");
+      afficherToast(m.video.signalementEchec);
     }
   }
 
@@ -458,7 +476,7 @@ export function VerticalFeed({
         body: c.body,
         created_at: c.created_at,
         username:
-          (c.profiles as unknown as { username?: string } | null)?.username ?? "disciple",
+          (c.profiles as unknown as { username?: string } | null)?.username ?? m.commun.disciple,
       })),
     );
     setChargeCommentaires(false);
@@ -479,7 +497,7 @@ export function VerticalFeed({
             id: r.comment.id,
             body: r.comment.body,
             created_at: r.comment.created_at,
-            username: me!.username ?? "moi",
+            username: me!.username ?? m.commun.moi,
           },
           ...prev,
         ]);
@@ -489,10 +507,10 @@ export function VerticalFeed({
         }));
         setNouveauCommentaire("");
       } else {
-        afficherToast("Commentaire refusé");
+        afficherToast(m.video.commentaireRefuse);
       }
     } catch {
-      afficherToast("Commentaire refusé");
+      afficherToast(m.video.commentaireRefuse);
     }
     setEnvoiCommentaire(false);
   }
@@ -507,7 +525,7 @@ export function VerticalFeed({
         <div className="pointer-events-auto flex items-center gap-2">
           <button
             onClick={basculerSon}
-            aria-label={muted ? "Activer le son" : "Couper le son"}
+            aria-label={muted ? m.video.activerSon : m.video.couperSon}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-xl transition hover:bg-white/20"
           >
             {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -519,7 +537,7 @@ export function VerticalFeed({
             >
               <span className="flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl">
                 <Camera className="h-4 w-4 text-amber-400" />
-                <span>Témoigner</span>
+                <span>{m.video.temoigner}</span>
               </span>
             </Link>
           ) : (
@@ -528,13 +546,13 @@ export function VerticalFeed({
                 href="/login"
                 className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:bg-white/20"
               >
-                Se connecter
+                {m.auth.seConnecter}
               </Link>
               <Link
                 href="/signup"
  className="btn-paradise rounded-full px-4 py-2 text-xs font-bold transition hover:scale-105"
               >
-                Rejoindre
+                {m.commun.rejoindre}
               </Link>
             </>
           )}
@@ -558,11 +576,8 @@ export function VerticalFeed({
         {videos.map((v, i) => {
           const proche = Math.abs(i - active) <= FENETRE;
           const typeBadge =
-            TYPE_CONFIG[v.type] ?? {
-              label: v.type,
-              bg: "from-emerald-500 to-teal-600",
-              icon: Sparkles,
-            };
+            TYPE_STYLE[v.type] ?? { bg: "from-emerald-500 to-teal-600", icon: Sparkles };
+          const typeLabel = m.types[v.type as keyof typeof m.types] ?? v.type;
           const BadgeIcon = typeBadge.icon;
           const aAmen = amened.has(v.id);
           const aPrie = prie.has(v.id);
@@ -604,7 +619,7 @@ export function VerticalFeed({
                 <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 text-center">
                   <span className="text-4xl">🎞️</span>
                   <p className="text-sm text-white/70">
-                    Vidéo indisponible — continue de faire défiler.
+                    {m.video.indisponible}
                   </p>
                 </div>
               )}
@@ -612,7 +627,7 @@ export function VerticalFeed({
               {paused && i === active && (
                 <button
                   onClick={() => setPaused(false)}
-                  aria-label="Reprendre la lecture"
+                  aria-label={m.video.reprendre}
                   className="absolute inset-0 z-20 flex items-center justify-center bg-black/20"
                 >
                   <span className="flex h-20 w-20 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-2xl backdrop-blur-2xl">
@@ -630,7 +645,7 @@ export function VerticalFeed({
                 >
                   <div>
                     <h3 className="text-[18px] font-bold tracking-tight text-white drop-shadow-md">
-                      @{v.username ?? "disciple"} ✨
+                      @{v.username ?? m.commun.disciple} ✨
                     </h3>
                     {v.caption && (
                       <p className="mt-1.5 line-clamp-3 text-[17px] leading-snug text-white drop-shadow">
@@ -643,7 +658,7 @@ export function VerticalFeed({
                       className={`inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r ${typeBadge.bg} px-3 py-1.5 text-[13px] font-semibold text-white shadow-lg`}
                     >
                       <BadgeIcon className="h-4 w-4" />
-                      <span>{typeBadge.label}</span>
+                      <span>{typeLabel}</span>
                     </span>
                     {v.verse_ref && (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-[13px] font-semibold text-white shadow-lg">
@@ -655,7 +670,7 @@ export function VerticalFeed({
                   <div className="flex w-[calc(100%+4.5rem)] items-center gap-2.5 rounded-2xl border border-white/15 bg-white/[0.14] px-3.5 py-2.5 backdrop-blur-xl">
                     <Music2 className="h-4 w-4 shrink-0 text-amber-200" />
                     <span className="truncate text-sm text-white/95">
-                      Son original — @{v.username ?? "disciple"}
+                      {m.video.sonOriginal(v.username ?? m.commun.disciple)}
                     </span>
                   </div>
                 </div>
@@ -677,7 +692,7 @@ export function VerticalFeed({
                   {!estMoi && (
                     <button
                       onClick={() => suivre(v)}
-                      aria-label={suit ? `Ne plus suivre @${v.username}` : `Suivre @${v.username}`}
+                      aria-label={suit ? m.video.nePlusSuivre(v.username ?? "") : m.video.suivre(v.username ?? "")}
                       className={`absolute -bottom-2 left-1/2 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full text-white shadow-md transition hover:scale-110 ${
                         suit ? "bg-emerald-500" : "bg-rose-500"
                       }`}
@@ -694,7 +709,7 @@ export function VerticalFeed({
                 {/* Amen (cœur) */}
                 <button
                   onClick={() => amen(v)}
-                  aria-label="Dire amen"
+                  aria-label={m.video.direAmen}
                   className="group flex flex-col items-center"
                 >
                   <span className="tap-bounce flex items-center justify-center transition-all duration-300">
@@ -714,7 +729,7 @@ export function VerticalFeed({
                 {/* Je prie pour toi (halo doré) */}
                 <button
                   onClick={() => prier(v)}
-                  aria-label="Je prie pour toi maintenant"
+                  aria-label={m.video.priePourToi}
                   className="group relative flex flex-col items-center"
                 >
                   {halo === v.id && (
@@ -737,7 +752,7 @@ export function VerticalFeed({
                 {/* Commentaires */}
                 <button
                   onClick={() => ouvrirCommentaires(v)}
-                  aria-label="Voir les commentaires"
+                  aria-label={m.video.voirCommentaires}
                   className="group flex flex-col items-center"
                 >
                   <span className="tap-bounce flex items-center justify-center text-white transition">
@@ -751,21 +766,21 @@ export function VerticalFeed({
                 {/* Partager */}
                 <button
                   onClick={() => partager(v)}
-                  aria-label="Partager"
+                  aria-label={m.video.partager}
                   className="group flex flex-col items-center"
                 >
                   <span className="tap-bounce flex items-center justify-center text-white transition">
                     <Share2 className="h-9 w-9" />
                   </span>
                   <span className="mt-1 text-[11px] font-medium text-white/70 drop-shadow">
-                    {partage === v.id ? "Copié !" : "Partager"}
+                    {partage === v.id ? m.video.copie : m.video.partager}
                   </span>
                 </button>
 
                 {/* Signaler (discret) */}
                 <button
                   onClick={() => signaler(v)}
-                  aria-label="Signaler cette vidéo"
+                  aria-label={m.video.signaler}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white/80"
                 >
                   <Flag className={`h-4 w-4 ${signalee.has(v.id) ? "fill-white/40" : ""}`} />
@@ -778,13 +793,13 @@ export function VerticalFeed({
         {videos.length === 0 && erreurInitiale && (
           <section className="flex h-full flex-col items-center justify-center gap-4 bg-slate-950 px-8 text-center">
             <span className="text-5xl">📡</span>
-            <p className="text-xl font-bold">Le feed n&apos;a pas pu charger.</p>
-            <p className="text-white/70">Vérifie ta connexion, puis réessaie.</p>
+            <p className="text-xl font-bold">{m.video.feedErreur}</p>
+            <p className="text-white/70">{m.video.feedErreurAide}</p>
             <button
               onClick={() => window.location.reload()}
  className="btn-paradise rounded-full px-8 py-3 font-semibold "
             >
-              Réessayer
+              {m.commun.reessayer}
             </button>
           </section>
         )}
@@ -792,15 +807,13 @@ export function VerticalFeed({
         {videos.length === 0 && !erreurInitiale && (
           <section className="flex h-full flex-col items-center justify-center gap-4 bg-slate-950 px-8 text-center">
             <Sparkles className="h-12 w-12 animate-bounce text-amber-400" />
-            <p className="text-xl font-bold">Aucune vidéo pour l&apos;instant.</p>
-            <p className="text-white/70">
-              Sois le premier à raconter ce que Dieu a fait — une minute, face caméra.
-            </p>
+            <p className="text-xl font-bold">{m.video.feedVide}</p>
+            <p className="text-white/70">{m.video.feedVideAide}</p>
             <Link
               href={me ? "/videos" : "/signup"}
  className="btn-paradise rounded-full px-8 py-3 font-semibold "
             >
-              {me ? "Partager un témoignage" : "Rejoindre le Réveil"}
+              {me ? m.video.partagerTemoignage : m.auth.rejoindreReveil}
             </Link>
           </section>
         )}
@@ -822,11 +835,11 @@ export function VerticalFeed({
             <span className="mx-auto mb-3 h-1 w-11 rounded-full bg-white/35" />
             <div className="relative flex items-center justify-center border-b border-white/10 pb-3">
               <span className="text-[17px] font-bold text-white">
-                Commentaires ({formatCompte(nbCommentaires(ouverte))})
+                {m.video.commentaires(formatCompte(nbCommentaires(ouverte)))}
               </span>
               <button
                 onClick={() => setOuverte(null)}
-                aria-label="Fermer les commentaires"
+                aria-label={m.video.fermerCommentaires}
                 className="absolute right-0 rounded-full bg-white/10 p-1.5 text-white/70 hover:text-white"
               >
                 <X className="h-4 w-4" />
@@ -838,22 +851,22 @@ export function VerticalFeed({
                 <div className="flex flex-col items-center gap-3 py-6 text-center">
                   <MessageCircle className="h-8 w-8 text-white/40" />
                   <p className="text-sm text-white/70">
-                    Connecte-toi pour lire et écrire les commentaires.
+                    {m.video.connecteToiCommentaires}
                   </p>
                   <Link
                     href="/signup"
  className="btn-paradise rounded-full px-6 py-2.5 text-sm font-semibold "
                   >
-                    Rejoindre le Réveil
+                    {m.auth.rejoindreReveil}
                   </Link>
                 </div>
               )}
               {me && chargeCommentaires && (
-                <p className="py-6 text-center text-sm text-white/50">Chargement…</p>
+                <p className="py-6 text-center text-sm text-white/50">{m.commun.chargement}</p>
               )}
               {me && !chargeCommentaires && commentaires.length === 0 && (
                 <p className="py-6 text-center text-sm text-white/50">
-                  Aucun commentaire — sois le premier à encourager. 🙌
+                  {m.video.aucunCommentaire}
                 </p>
               )}
               {commentaires.map((c) => (
@@ -864,7 +877,7 @@ export function VerticalFeed({
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-white/90">@{c.username}</span>
-                      <span className="text-[10px] text-white/40">{ageLabel(c.created_at)}</span>
+                      <span className="text-[10px] text-white/40">{ageLabel(c.created_at, m)}</span>
                     </div>
                     <p className="mt-0.5 whitespace-pre-wrap text-xs leading-normal text-white/80">
                       {c.body}
@@ -883,12 +896,12 @@ export function VerticalFeed({
                   value={nouveauCommentaire}
                   onChange={(e) => setNouveauCommentaire(e.target.value)}
                   maxLength={2000}
-                  placeholder="Ajouter un commentaire…"
+                  placeholder={m.video.ajouterCommentaire}
                   className="glass-input flex-1 rounded-full px-4 py-2.5 text-xs placeholder:text-white/40"
                 />
                 <button
                   disabled={envoiCommentaire || !nouveauCommentaire.trim()}
-                  aria-label="Envoyer le commentaire"
+                  aria-label={m.video.envoyerCommentaire}
  className="btn-paradise flex items-center justify-center rounded-full px-4 text-xs font-semibold disabled:opacity-50"
                 >
                   <Send className="h-3.5 w-3.5" />

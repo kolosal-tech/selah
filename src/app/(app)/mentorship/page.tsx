@@ -1,9 +1,11 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { offerMentorship, requestMentorship } from "@/app/actions";
 import { Users, UserPlus } from "lucide-react";
+import { getMessages } from "@/i18n/server";
 
 export default async function Mentorship() {
   const supabase = await supabaseServer();
+  const m = await getMessages();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -20,9 +22,9 @@ export default async function Mentorship() {
     <main className="flex flex-col gap-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">Paul &amp; Timothée</h1>
+        <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">{m.mentorat.titre}</h1>
         <p className="mt-1 text-sm text-white/70">
-          Mentorat volontaire : transmission de la foi, écoute et discipulat (2 Tim. 2:2)
+          {m.mentorat.sousTitre}
         </p>
       </div>
 
@@ -33,12 +35,12 @@ export default async function Mentorship() {
       >
         <input
           name="topics"
-          placeholder="Je me rends disponible comme mentor (ex. prière, vocation…)"
+          placeholder={m.mentorat.placeholder}
           className="glass-input flex-1 rounded-2xl p-3.5 text-sm placeholder:text-white/40"
         />
         <button className="flex items-center justify-center gap-2 rounded-full btn-paradise px-6 py-3 text-xs font-bold hover:scale-105 transition">
           <UserPlus className="h-4 w-4" />
-          <span>Devenir Paul</span>
+          <span>{m.mentorat.devenirPaul}</span>
         </button>
       </form>
 
@@ -46,7 +48,7 @@ export default async function Mentorship() {
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-white/90 flex items-center gap-2">
           <Users className="h-5 w-5 text-emerald-400" />
-          <span>Mentors disponibles</span>
+          <span>{m.mentorat.disponibles}</span>
         </h2>
 
         <div className="grid gap-3">
@@ -64,16 +66,16 @@ export default async function Mentorship() {
                 <div>
                   <span className="font-bold text-sm text-white">@{o.profiles?.username}</span>
                   <span className="ml-2 rounded-full bg-emerald-500/20 text-emerald-300 px-2 py-0.5 text-[10px] font-semibold border border-emerald-500/30">
-                    Disponible
+                    {m.mentorat.disponible}
                   </span>
-                  <p className="mt-0.5 text-xs text-white/60">{o.topics || "Accompagnement spirituel"}</p>
+                  <p className="mt-0.5 text-xs text-white/60">{o.topics || m.mentorat.accompagnement}</p>
                 </div>
               </div>
 
               {o.user_id !== user?.id && (
                 <form action={requestMentorship.bind(null, o.user_id)}>
                   <button className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 text-xs font-bold text-white transition">
-                    Demander
+                    {m.mentorat.demander}
                   </button>
                 </form>
               )}
@@ -81,7 +83,7 @@ export default async function Mentorship() {
           ))}
           {(offers ?? []).length === 0 && (
             <div className="glass-card p-6 text-center text-xs text-white/50">
-              Aucun mentor disponible pour l&apos;instant. Propose le premier accompagnement.
+              {m.mentorat.videMentors}
             </div>
           )}
         </div>
@@ -89,7 +91,7 @@ export default async function Mentorship() {
 
       {/* Mes mentorats */}
       <section className="space-y-3">
-        <h2 className="text-lg font-bold text-white/90">Mes mentorats</h2>
+        <h2 className="text-lg font-bold text-white/90">{m.mentorat.mesMentorats}</h2>
         <div className="grid gap-3">
           {(mine ?? []).map((m) => (
             <div key={m.id} className="glass-card p-4 flex items-center justify-between text-xs">
@@ -104,7 +106,7 @@ export default async function Mentorship() {
           ))}
           {(mine ?? []).length === 0 && (
             <div className="glass-card p-6 text-center text-xs text-white/50">
-              Aucun mentorat en cours.
+              {m.mentorat.videMentorats}
             </div>
           )}
         </div>

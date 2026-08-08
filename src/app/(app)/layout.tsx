@@ -4,7 +4,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { isSabbathActive } from "@/lib/sabbath";
 import { logout } from "@/app/actions";
 import { BarreRetour, FloatingPillNav, MotSelah } from "../nav-components";
+import { SelecteurLangue } from "../selecteur-langue";
 import { Flame, LogOut } from "lucide-react";
+import { getMessages } from "@/i18n/server";
 
 export default async function AppLayout({
   children,
@@ -25,6 +27,8 @@ export default async function AppLayout({
 
   if (isSabbathActive(profile?.sabbath_until)) redirect("/sabbath");
 
+  const m = await getMessages();
+
   return (
     <div className="mx-auto flex min-h-screen max-w-[430px] flex-col px-4 pb-36 pt-4">
       {/* Header : logotype Selah bien visible, blanc et italique */}
@@ -35,13 +39,14 @@ export default async function AppLayout({
         <div className="flex items-center gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 font-medium text-amber-300">
             <Flame className="h-4 w-4 fill-amber-400 text-amber-400" />
-            <span>{profile?.streak_days ?? 0} j</span>
+            <span>{m.commun.jours(profile?.streak_days ?? 0)}</span>
           </div>
           <span className="hidden font-medium text-white/80 sm:inline">@{profile?.username}</span>
+          <SelecteurLangue compact />
           <form action={logout}>
             <button className="flex items-center gap-1 text-white/50 transition hover:text-white">
               <LogOut className="h-4 w-4" />
-              <span className="sr-only">Sortir</span>
+              <span className="sr-only">{m.commun.sortir}</span>
             </button>
           </form>
         </div>

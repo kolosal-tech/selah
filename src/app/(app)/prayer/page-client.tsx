@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createPrayerRequest, prayNow } from "@/app/actions";
 import { HeartHandshake, Send, Sparkles, CheckCircle2 } from "lucide-react";
+import { useMessages } from "@/i18n/client";
 
 export interface PrayerItem {
   id: string;
@@ -17,6 +18,7 @@ export interface PrayerItem {
 export function PrayerClientView({ initialRequests }: { initialRequests: PrayerItem[] }) {
   const [requests, setRequests] = useState(initialRequests);
   const [glowingHaloId, setGlowingHaloId] = useState<string | null>(null);
+  const m = useMessages();
 
   const handlePray = async (id: string) => {
     // Halo glow effect
@@ -37,24 +39,21 @@ export function PrayerClientView({ initialRequests }: { initialRequests: PrayerI
     <main className="flex flex-col gap-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">Mur de Prière</h1>
-        <p className="mt-1 text-sm text-white/70">
-          Dépose tes sujets et intercède pour la communauté mondiale.
-        </p>
+        <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">{m.priere.titre}</h1>
+        <p className="mt-1 text-sm text-white/70">{m.priere.sousTitre}</p>
       </div>
 
-      {/* Translucent Top Input Container with Gradient Gold/Coral Submit Button */}
       <form
         action={createPrayerRequest}
         className="glass-card p-5 space-y-4 shadow-2xl relative overflow-hidden group"
       >
-        <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+        <div className="absolute -top-10 -end-10 h-32 w-32 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
 
         <textarea
           name="body"
           required
           rows={3}
-          placeholder="Dépose ton sujet de prière en toute confiance…"
+          placeholder={m.priere.placeholder}
           className="glass-input w-full rounded-2xl p-4 text-sm placeholder:text-white/40 resize-none"
         />
 
@@ -65,12 +64,12 @@ export function PrayerClientView({ initialRequests }: { initialRequests: PrayerI
               name="anonymous"
               className="h-4 w-4 rounded border-white/20 bg-white/10 text-amber-500 focus:ring-amber-500/50"
             />
-            <span>Publier anonymement</span>
+            <span>{m.priere.anonyme}</span>
           </label>
 
           <button className="flex items-center gap-2 rounded-full btn-paradise px-6 py-2.5 text-xs font-bold hover:scale-105 active:scale-95 transition">
             <Send className="h-4 w-4" />
-            <span>Déposer ma prière</span>
+            <span>{m.priere.deposer}</span>
           </button>
         </div>
       </form>
@@ -87,12 +86,14 @@ export function PrayerClientView({ initialRequests }: { initialRequests: PrayerI
             >
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-amber-300">
-                  {r.anonymous ? "Disciple Anonyme" : `@${r.profiles?.username ?? "frère"}`}
+                  {r.anonymous
+                    ? m.priere.discipleAnonyme
+                    : `@${r.profiles?.username ?? m.commun.frere}`}
                 </span>
                 {r.answered && (
                   <span className="flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-3 py-1 text-[11px] font-semibold text-emerald-300 shadow-sm">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Exaucé ✨</span>
+                    <span>{m.priere.exauce}</span>
                   </span>
                 )}
               </div>
@@ -102,7 +103,6 @@ export function PrayerClientView({ initialRequests }: { initialRequests: PrayerI
               </p>
 
               <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                {/* Interactive "I'm praying for you" button with glowing golden halo effect */}
                 <button
                   onClick={() => handlePray(r.id)}
                   className={`relative flex items-center gap-2.5 rounded-full px-5 py-2 text-xs font-bold transition-all duration-300 ${
@@ -112,14 +112,14 @@ export function PrayerClientView({ initialRequests }: { initialRequests: PrayerI
                   }`}
                 >
                   <HeartHandshake className="h-4 w-4 text-amber-300" />
-                  <span>Je prie pour toi maintenant</span>
+                  <span>{m.priere.priePourToi}</span>
                 </button>
 
                 <div className="flex items-center gap-1.5 text-xs text-white/60 font-medium">
                   <Sparkles className="h-3.5 w-3.5 text-amber-400" />
                   <span>
                     <strong className="text-amber-300 font-bold">{r.pray_count}</strong>{" "}
-                    {r.pray_count > 1 ? "intercesseurs" : "intercesseur"}
+                    {m.priere.intercesseurs(r.pray_count)}
                   </span>
                 </div>
               </div>
@@ -130,13 +130,10 @@ export function PrayerClientView({ initialRequests }: { initialRequests: PrayerI
         {requests.length === 0 && (
           <div className="glass-card p-10 text-center space-y-2">
             <HeartHandshake className="h-10 w-10 text-amber-400 mx-auto opacity-70" />
-            <p className="text-sm font-medium text-white/70">
-              Aucune requête pour l&apos;instant. Sois le premier à déposer la tienne. 🙏
-            </p>
+            <p className="text-sm font-medium text-white/70">{m.priere.vide}</p>
           </div>
         )}
       </div>
     </main>
   );
 }
-

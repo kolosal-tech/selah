@@ -1,9 +1,11 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { joinChurch } from "@/app/actions";
 import { Users, Flame, MessageSquare, HeartHandshake, Building2, TrendingUp } from "lucide-react";
+import { getMessages } from "@/i18n/server";
 
 export default async function Pastor() {
   const supabase = await supabaseServer();
+  const m = await getMessages();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -24,9 +26,9 @@ export default async function Pastor() {
     return (
       <main className="flex flex-col gap-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">Dashboard pasteur</h1>
+          <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">{m.pasteur.titre}</h1>
           <p className="mt-1 text-sm text-white/70">
-            Rattache-toi à ton église locale pour suivre la vitalité de ta communauté.
+            {m.pasteur.sousTitre}
           </p>
         </div>
         <form
@@ -38,7 +40,7 @@ export default async function Pastor() {
             required
             className="glass-input flex-1 rounded-2xl p-3.5 text-sm text-white bg-slate-900/80"
           >
-            <option value="" className="bg-slate-950 text-white/60">Choisis ton église…</option>
+            <option value="" className="bg-slate-950 text-white/60">{m.pasteur.choisis}</option>
             {(churches ?? []).map((c) => (
               <option key={c.id} value={c.id} className="bg-slate-950 text-white">
                 {c.name} — {c.city || c.country}
@@ -46,7 +48,7 @@ export default async function Pastor() {
             ))}
           </select>
           <button className="rounded-full btn-paradise px-8 py-3 text-xs font-bold hover:scale-105 transition">
-            Rejoindre
+            {m.pasteur.rejoindre}
           </button>
         </form>
       </main>
@@ -59,10 +61,10 @@ export default async function Pastor() {
   ]);
 
   const cartes = [
-    { label: "Membres sur Selah", valeur: pouls?.membres ?? 0, icon: Users, gradient: "from-amber-400 to-rose-400" },
-    { label: "Jours de fidélité cumulés", valeur: pouls?.jours_de_fidelite ?? 0, icon: Flame, gradient: "from-amber-400 to-emerald-400" },
-    { label: "Publications (7 jours)", valeur: pouls?.posts_7j ?? 0, icon: MessageSquare, gradient: "from-teal-400 to-cyan-400" },
-    { label: "Prières portées (7 jours)", valeur: pouls?.prieres_7j ?? 0, icon: HeartHandshake, gradient: "from-cyan-400 to-indigo-400" },
+    { label: m.pasteur.membres, valeur: pouls?.membres ?? 0, icon: Users, gradient: "from-amber-400 to-rose-400" },
+    { label: m.pasteur.fidelite, valeur: pouls?.jours_de_fidelite ?? 0, icon: Flame, gradient: "from-amber-400 to-emerald-400" },
+    { label: m.pasteur.publications, valeur: pouls?.posts_7j ?? 0, icon: MessageSquare, gradient: "from-teal-400 to-cyan-400" },
+    { label: m.pasteur.prieres, valeur: pouls?.prieres_7j ?? 0, icon: HeartHandshake, gradient: "from-cyan-400 to-indigo-400" },
   ];
 
   return (
@@ -74,7 +76,7 @@ export default async function Pastor() {
           <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">{eglise?.name}</h1>
         </div>
         <p className="mt-1 text-sm text-white/70">
-          {eglise?.city || eglise?.country} · Aperçu consolidé de l&apos;activité spirituelle
+          {eglise?.city || eglise?.country} · {m.pasteur.apercu}
         </p>
       </div>
 

@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { sabbathEnd } from "@/lib/sabbath";
+import { COOKIE_LOCALE, estLocale, localePourPays } from "@/i18n/config";
 
 async function requireUser() {
   const supabase = await supabaseServer();
@@ -25,17 +27,46 @@ export async function signup(formData: FormData) {
   if (!/^[a-z0-9_]{3,30}$/.test(username)) {
     redirect("/signup?error=username");
   }
+  // La langue suit le pays choisi, dès maintenant : l'écran suivant
+  // (confirmation ou accueil) parle déjà la langue de l'utilisateur.
+  const locale = localePourPays(country);
+  const jar = await cookies();
+  jar.set(COOKIE_LOCALE, locale, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
   const supabase = await supabaseServer();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { username, country } },
+    options: { data: { username, country, locale } },
   });
   if (error || !data.user)
     redirect(`/signup?error=${encodeURIComponent(error?.message ?? "inconnu")}`);
   // Le profil est créé par le trigger handle_new_user (avec ou sans confirmation email).
   if (!data.session) redirect("/login?info=confirm");
   redirect("/");
+}
+
+/** Changement de langue : cookie tout de suite, profil si connecté. */
+export async function setLocale(formData: FormData) {
+  const locale = String(formData.get("locale") ?? "");
+  if (!estLocale(locale)) return;
+  const jar = await cookies();
+  jar.set(COOKIE_LOCALE, locale, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
+  const supabase = await supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    await supabase.from("profiles").update({ locale }).eq("id", user.id);
+  }
+  revalidatePath("/", "layout");
 }
 
 export async function login(formData: FormData) {

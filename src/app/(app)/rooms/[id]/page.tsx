@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { closePrayerRoom } from "@/app/actions";
 import { RoomLive, type Message } from "./room-live";
+import { getMessages } from "@/i18n/server";
 
 export default async function Room({
   params,
@@ -33,20 +34,22 @@ export default async function Room({
 
   if (!room) notFound();
 
+  const m = await getMessages();
+
   // PostgREST renvoie l'embed sous forme de tableau quand il ne peut pas
   // prouver l'unicité ; on prend le premier élément dans ce cas.
-  const initial: Message[] = (messages ?? []).map((m) => {
-    const p = m.profiles as unknown as
+  const initial: Message[] = (messages ?? []).map((msg) => {
+    const p = msg.profiles as unknown as
       | { username: string }
       | { username: string }[]
       | null;
     const auteur = Array.isArray(p) ? p[0]?.username : p?.username;
     return {
-      id: m.id,
-      body: m.body,
-      created_at: m.created_at,
-      author_id: m.author_id,
-      auteur: auteur ?? "inconnu",
+      id: msg.id,
+      body: msg.body,
+      created_at: msg.created_at,
+      author_id: msg.author_id,
+      auteur: auteur ?? m.commun.inconnu,
     };
   });
 
@@ -55,17 +58,17 @@ export default async function Room({
       <div className="flex items-start justify-between">
         <div>
           <Link href="/rooms" className="text-sm text-white/50 hover:text-white/80">
-            ← Upper Room
+            ← {m.rooms.upperRoom}
           </Link>
           <h1 className="text-2xl font-bold text-gradient-gold">{room.title}</h1>
           <p className="text-white/70">
-            {room.topic || "Prière libre"} · animée par @{room.profiles?.username}
+            {room.topic || m.rooms.priereLibre} · {m.rooms.animeePar} @{room.profiles?.username}
           </p>
         </div>
         {room.host_id === user.id && !room.closed_at && (
           <form action={closePrayerRoom.bind(null, room.id)}>
             <button className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-sm text-white/70 transition hover:bg-white/10 hover:text-white">
-              Fermer
+              {m.rooms.fermerSalle}
             </button>
           </form>
         )}
@@ -73,14 +76,14 @@ export default async function Room({
 
       {room.closed_at ? (
         <p className="glass-card p-6 text-center text-white/60">
-          Cette veillée est terminée. Les messages restent lisibles.
+          {m.rooms.veilleeTerminee}
         </p>
       ) : null}
 
       <RoomLive
         roomId={room.id}
         userId={user.id}
-        username={moi?.username ?? "moi"}
+        username={moi?.username ?? m.commun.moi}
         initial={initial}
       />
     </main>

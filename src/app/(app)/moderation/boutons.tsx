@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { resolveReport, setVideoHidden } from "@/app/actions";
 import { Check, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useMessages } from "@/i18n/client";
 
 /** Boutons d'action de modération : état visible, échec annoncé, jamais muet. */
 export function BoutonsModeration({
@@ -14,6 +15,7 @@ export function BoutonsModeration({
   reportId?: string;
   hidden: boolean;
 }) {
+  const m = useMessages();
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState("");
   const [etatCache, setEtatCache] = useState(hidden);
@@ -25,9 +27,9 @@ export function BoutonsModeration({
     try {
       const r = await setVideoHidden(videoId, !etatCache);
       if (r?.ok) setEtatCache(!etatCache);
-      else setErreur("Action refusée — vérifie ton rôle.");
+      else setErreur(m.moderation.refusRole);
     } catch {
-      setErreur("Action impossible, réessaie.");
+      setErreur(m.moderation.echec);
     }
     setOccupe(false);
   }
@@ -39,9 +41,9 @@ export function BoutonsModeration({
     try {
       const r = await resolveReport(reportId);
       if (r?.ok) setClos(true);
-      else setErreur("Clôture refusée — vérifie ton rôle.");
+      else setErreur(m.moderation.refusClotureRole);
     } catch {
-      setErreur("Action impossible, réessaie.");
+      setErreur(m.moderation.echec);
     }
     setOccupe(false);
   }
@@ -65,7 +67,7 @@ export function BoutonsModeration({
           ) : (
             <EyeOff className="h-3.5 w-3.5" />
           )}
-          <span>{etatCache ? "Rétablir" : "Masquer"}</span>
+          <span>{etatCache ? m.moderation.retablir : m.moderation.masquer}</span>
         </button>
         {reportId && !clos && (
           <button
@@ -74,18 +76,18 @@ export function BoutonsModeration({
             className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white/80 transition hover:bg-white/20 disabled:opacity-50"
           >
             <Check className="h-3.5 w-3.5" />
-            <span>Clore le signalement</span>
+            <span>{m.moderation.clore}</span>
           </button>
         )}
         {clos && (
           <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-300">
-            <Check className="h-3.5 w-3.5" /> Traité
+            <Check className="h-3.5 w-3.5" /> {m.moderation.traite}
           </span>
         )}
       </div>
       {etatCache && (
         <p className="text-[11px] text-white/40">
-          Vidéo masquée : invisible dans le feed public.
+          {m.moderation.masqueeInfo}
         </p>
       )}
       {erreur && <p className="text-xs text-rose-400">{erreur}</p>}

@@ -3,6 +3,9 @@ import { Geist, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ServiceWorker } from "./service-worker";
 import { FondAmbiance } from "./fond-ambiance";
+import { dirDe } from "@/i18n/config";
+import { LocaleProvider } from "@/i18n/client";
+import { getLocale, getMessages } from "@/i18n/server";
 
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 
@@ -14,19 +17,26 @@ const playfair = Playfair_Display({
   weight: ["500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "Selah — le réseau du Réveil",
-  description:
-    "Communion mondiale, prière en temps réel, témoignages et adoration. Selah : pause, et médite.",
-  manifest: "/manifest.json",
-  icons: { icon: "/icon-192.png", apple: "/apple-icon.png" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const m = await getMessages();
+  return {
+    title: m.meta.titre,
+    description: m.meta.description,
+    manifest: "/manifest.json",
+    icons: { icon: "/icon-192.png", apple: "/apple-icon.png" },
+  };
+}
 
 export const viewport: Viewport = { themeColor: "#d97706", viewportFit: "cover" };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
   return (
-    <html lang="fr" className={`${geist.variable} ${playfair.variable} h-full antialiased dark`}>
+    <html
+      lang={locale}
+      dir={dirDe(locale)}
+      className={`${geist.variable} ${playfair.variable} h-full antialiased dark`}
+    >
       <body className="min-h-full bg-slate-950 text-white font-sans selection:bg-amber-500/30">
         {/* Fond « Paradis » : nuit profonde traversée de lumières dorées et
             turquoises — jamais d'aplat opaque. Ce dégradé est le socle peint
@@ -36,7 +46,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-amber-500/15 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute bottom-1/3 right-0 w-[400px] h-[400px] bg-cyan-500/15 rounded-full blur-[100px] pointer-events-none" />
         </div>
-        <FondAmbiance>{children}</FondAmbiance>
+        <LocaleProvider locale={locale}>
+          <FondAmbiance>{children}</FondAmbiance>
+        </LocaleProvider>
         <ServiceWorker />
       </body>
     </html>

@@ -1,11 +1,10 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { signup } from "@/app/actions";
 import { Sparkles } from "lucide-react";
-
-const ERRORS: Record<string, string> = {
-  charte: "Tu dois accepter la charte spirituelle pour rejoindre Selah.",
-  username: "Nom d'utilisateur : 3 à 30 caractères, lettres/chiffres/underscore.",
-};
+import { getMessages } from "@/i18n/server";
+import { SelecteurLangue } from "@/app/selecteur-langue";
+import { ChampPays } from "./champ-pays";
 
 export default async function Signup({
   searchParams,
@@ -13,45 +12,52 @@ export default async function Signup({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const m = await getMessages();
+  const entetes = await headers();
+  const paysDetecte = entetes.get("x-vercel-ip-country");
+  const erreurs: Record<string, string> = {
+    charte: m.auth.erreurCharte,
+    username: m.auth.erreurUsername,
+  };
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6 py-12">
       <div>
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
-          <Sparkles className="h-4 w-4" />
-          <span>Selah</span>
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
+            <Sparkles className="h-4 w-4" />
+            <span>Selah</span>
+          </p>
+          <SelecteurLangue compact />
+        </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
-          Rejoindre le Réveil
+          {m.auth.rejoindreReveil}
         </h1>
       </div>
       {error && (
         <p className="rounded-xl border border-rose-500/30 bg-rose-500/15 p-3 text-sm text-rose-300">
-          {ERRORS[error] ?? error}
+          {erreurs[error] ?? error}
         </p>
       )}
       <form action={signup} className="flex flex-col gap-3">
         {/* `title` est indispensable : sans lui, le navigateur refuse le champ
-            avec son message générique « Veuillez respecter le format demandé »,
-            qui ne dit jamais quels caractères sont acceptés. */}
+            avec son message générique, qui ne dit jamais quels caractères
+            sont acceptés. */}
         <div className="flex flex-col gap-1">
           <input
             name="username"
             required
-            placeholder="Nom d'utilisateur"
+            placeholder={m.auth.nomUtilisateur}
             pattern="[a-zA-Z0-9_]{3,30}"
-            title="3 à 30 caractères : lettres, chiffres et tiret bas (_) uniquement. Ni point, ni tiret, ni espace."
+            title={m.auth.nomUtilisateurTitre}
             className="glass-input rounded-xl p-3 placeholder:text-white/40"
           />
-          <p className="px-1 text-xs text-white/45">
-            Lettres, chiffres et <code className="text-white/70">_</code> — ni point,
-            ni tiret, ni espace. Exemple : <code className="text-white/70">selah_lumiere</code>
-          </p>
+          <p className="px-1 text-xs text-white/45">{m.auth.nomUtilisateurAide}</p>
         </div>
         <input
           name="email"
           type="email"
           required
-          placeholder="Email"
+          placeholder={m.auth.email}
           className="glass-input rounded-xl p-3 placeholder:text-white/40"
         />
         <input
@@ -59,32 +65,25 @@ export default async function Signup({
           type="password"
           required
           minLength={8}
-          placeholder="Mot de passe (8 caractères min.)"
+          placeholder={m.auth.motDePasseMin}
           className="glass-input rounded-xl p-3 placeholder:text-white/40"
         />
-        <input
-          name="country"
-          maxLength={2}
-          placeholder="Pays (code, ex. FR, CI, CD)"
-          className="glass-input rounded-xl p-3 uppercase placeholder:text-white/40"
-        />
+        <ChampPays paysDetecte={paysDetecte} />
         <label className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-white/80">
           <input type="checkbox" name="charte" required className="mt-1 accent-amber-500" />
           <span>
-            <strong className="text-amber-200">Charte spirituelle</strong> : je
-            m&apos;engage à édifier, non à détruire ; à parler avec grâce et
-            vérité ; à respecter chaque frère et sœur ; à ne rien publier de
-            contraire à l&apos;Évangile. (Éph. 4:29)
+            <strong className="text-amber-200">{m.auth.charteTitre}</strong> :{" "}
+            {m.auth.charteTexte}
           </span>
         </label>
         <button className="btn-paradise rounded-xl p-3 font-bold transition hover:scale-[1.02]">
-          Créer mon compte
+          {m.auth.creerCompte}
         </button>
       </form>
       <p className="text-sm text-white/60">
-        Déjà membre ?{" "}
+        {m.auth.dejaMembre}{" "}
         <Link href="/login" className="font-semibold text-amber-300 hover:text-amber-200">
-          Se connecter
+          {m.auth.seConnecter}
         </Link>
       </p>
     </main>

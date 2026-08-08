@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { BoutonsModeration } from "./boutons";
 import { ShieldCheck, Flag, EyeOff } from "lucide-react";
+import { getLocale, getMessages } from "@/i18n/server";
 
 type LigneSignalement = {
   id: string;
@@ -24,6 +25,8 @@ type LigneSignalement = {
  *  la RLS côté base fait autorité, la redirection évite juste une page vide. */
 export default async function Moderation() {
   const supabase = await supabaseServer();
+  const m = await getMessages();
+  const locale = await getLocale();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -74,21 +77,20 @@ export default async function Moderation() {
       <div>
         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
           <ShieldCheck className="h-4 w-4" />
-          <span>Garde du troupeau</span>
+          <span>{m.moderation.badge}</span>
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
-          Modération des vidéos
+          {m.moderation.titre}
         </h1>
         <p className="mt-1 text-sm text-white/60">
-          Un environnement pur : chaque signalement est examiné, chaque décision
-          est réversible.
+          {m.moderation.sousTitre}
         </p>
       </div>
 
       <section className="flex flex-col gap-4">
         <h2 className="flex items-center gap-2 text-lg font-bold text-white">
           <Flag className="h-5 w-5 text-rose-400" />
-          <span>Signalements ouverts</span>
+          <span>{m.moderation.ouverts}</span>
           <span className="rounded-full bg-rose-500/20 px-2.5 py-0.5 text-xs font-bold text-rose-300">
             {lignes.length}
           </span>
@@ -98,7 +100,7 @@ export default async function Moderation() {
           <div className="glass-card flex flex-col items-center gap-2 p-8 text-center">
             <span className="text-3xl">🕊️</span>
             <p className="text-sm text-white/70">
-              Aucun signalement en attente. Le troupeau est en paix.
+              {m.moderation.paix}
             </p>
           </div>
         )}
@@ -118,14 +120,14 @@ export default async function Moderation() {
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
                     <span className="font-bold text-white/90">
-                      @{s.video.profiles?.username ?? "inconnu"}
+                      @{s.video.profiles?.username ?? m.commun.inconnu}
                     </span>
                     <span className="rounded-full bg-white/10 px-2 py-0.5">
                       {s.video.type}
                     </span>
                     {s.video.hidden && (
                       <span className="flex items-center gap-1 rounded-full bg-rose-500/20 px-2 py-0.5 font-semibold text-rose-300">
-                        <EyeOff className="h-3 w-3" /> masquée
+                        <EyeOff className="h-3 w-3" /> {m.moderation.masquee}
                       </span>
                     )}
                   </div>
@@ -135,15 +137,15 @@ export default async function Moderation() {
                     </p>
                   )}
                   <p className="text-xs text-white/50">
-                    Signalée par @{s.reporter?.username ?? "inconnu"} —{" "}
-                    {new Date(s.created_at).toLocaleDateString("fr-FR", {
+                    {m.moderation.signaleePar(s.reporter?.username ?? m.commun.inconnu)} —{" "}
+                    {new Date(s.created_at).toLocaleDateString(locale, {
                       day: "numeric",
                       month: "long",
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                     <br />
-                    Motif : {s.reason}
+                    {m.moderation.motif(s.reason)}
                   </p>
                   <div className="mt-auto pt-2">
                     <BoutonsModeration
@@ -161,7 +163,7 @@ export default async function Moderation() {
       <section className="flex flex-col gap-4">
         <h2 className="flex items-center gap-2 text-lg font-bold text-white">
           <EyeOff className="h-5 w-5 text-white/60" />
-          <span>Vidéos masquées</span>
+          <span>{m.moderation.masquees}</span>
           <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-bold text-white/70">
             {videosMasquees.length}
           </span>
@@ -169,7 +171,7 @@ export default async function Moderation() {
 
         {videosMasquees.length === 0 && (
           <p className="text-sm text-white/50">
-            Aucune vidéo masquée actuellement.
+            {m.moderation.aucuneMasquee}
           </p>
         )}
 
@@ -185,7 +187,7 @@ export default async function Moderation() {
             />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-white/90">
-                @{v.profiles?.username ?? "inconnu"}
+                @{v.profiles?.username ?? m.commun.inconnu}
               </p>
               {v.caption && (
                 <p className="line-clamp-2 text-sm text-white/70">{v.caption}</p>

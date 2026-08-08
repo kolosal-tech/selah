@@ -1,9 +1,11 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { addChurch } from "@/app/actions";
 import { Building2, Plus, CheckCircle2, MapPin } from "lucide-react";
+import { getMessages } from "@/i18n/server";
 
 export default async function Churches() {
   const supabase = await supabaseServer();
+  const m = await getMessages();
   const { data: churches } = await supabase
     .from("churches")
     .select("*")
@@ -14,9 +16,9 @@ export default async function Churches() {
     <main className="flex flex-col gap-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">Annuaire des églises</h1>
+        <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">{m.eglises.titre}</h1>
         <p className="mt-1 text-sm text-white/70">
-          Référence ton église locale et fortifie la communion fraternelle.
+          {m.eglises.sousTitre}
         </p>
       </div>
 
@@ -29,12 +31,12 @@ export default async function Churches() {
           <input
             name="name"
             required
-            placeholder="Nom de l'église (ex. Église Connexion)"
+            placeholder={m.eglises.nomPlaceholder}
             className="glass-input flex-1 rounded-2xl p-3.5 text-sm placeholder:text-white/40"
           />
           <input
             name="city"
-            placeholder="Ville"
+            placeholder={m.eglises.villePlaceholder}
             className="glass-input rounded-2xl p-3.5 text-sm placeholder:text-white/40 sm:w-1/3"
           />
           <input
@@ -45,7 +47,7 @@ export default async function Churches() {
           />
           <button className="flex items-center justify-center gap-2 rounded-full btn-paradise px-6 py-3 text-xs font-bold hover:scale-105 transition">
             <Plus className="h-4 w-4" />
-            <span>Ajouter</span>
+            <span>{m.eglises.ajouter}</span>
           </button>
         </div>
       </form>
@@ -77,7 +79,7 @@ export default async function Churches() {
 
             {c.verified && (
               <span className="rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
-                Vérifiée
+                {m.eglises.verifiee}
               </span>
             )}
           </div>
@@ -86,7 +88,7 @@ export default async function Churches() {
           <div className="glass-card p-10 text-center space-y-2">
             <Building2 className="h-10 w-10 text-amber-400 mx-auto opacity-70" />
             <p className="text-sm font-medium text-white/70">
-              Aucune église référencée pour l&apos;instant. Ajoute la tienne. ⛪
+              {m.eglises.vide}
             </p>
           </div>
         )}
