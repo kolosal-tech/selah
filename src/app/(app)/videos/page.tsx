@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { UploadForm } from "./upload-form";
+import { DepotLot } from "./depot-lot";
 import { Clapperboard, Play } from "lucide-react";
 
 /** Le feed vidéo vit en plein écran sur la page d'accueil `/`.
@@ -41,6 +42,11 @@ export default async function PublierVideo() {
       </div>
 
       <UploadForm userId={user!.id} />
+
+      {/* Publication en série : utile pour amorcer le fil, ou pour toute
+          campagne préparée hors ligne. Même chemin que le studio — dépôt
+          direct du navigateur vers Storage, puis `publishVideo`. */}
+      <DepotLot userId={user!.id} />
 
       {(miennes ?? []).length > 0 && (
         <section>
