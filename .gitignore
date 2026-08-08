@@ -46,3 +46,8 @@ docs/COMPTES-TEST.md
 
 # Config locale outillage
 .claude/
+
+# Sorties du doublage : les mp3/mp4 produits vivent hors dépôt
+scripts/doublage/voix/
+scripts/doublage/essai/
+scripts/doublage/__pycache__/

@@ -1,58 +1,70 @@
-# Doublage des vidéos d'amorçage — 11 langues
+# Doublage des vidéos d'amorçage — 10 langues
 
-Objectif : pour chacune des 12 vidéos publiées (compte `selah_lumiere`),
-produire une variante par langue — narration doublée, verset et clôture
-gravés dans la langue — puis la publier dans le bucket et renseigner
-`video_translations.storage_path` / `thumb_path`. Le fil sert déjà la
-variante quand ces colonnes sont remplies (repli : vidéo française).
+Chaque vidéo publiée existe en dix versions parlées : anglais, espagnol,
+portugais, italien, allemand, russe, arabe, chinois, japonais, coréen. Le
+fil sert la version correspondant à la langue du lecteur ; les langues sans
+doublage (français d'origine, hébreu) reçoivent la version française, avec
+verset et légende traduits.
 
 ## Chaîne
 
-1. **Narrations** : `narrations.json` — pour chaque unité (01–12) et chaque
-   langue, le texte à dire (60–68 mots, calibré ~20 s) et la clôture gravée.
-   Les versets et références par langue viennent de
-   `../traductions-videos.json` (traductions bibliques établies).
-2. **Voix** : `doubler.py --etape voix` appelle ElevenLabs
-   (`eleven_multilingual_v2`, voix femme/homme selon l'unité, comme la
-   version française). Sortie : `voix/<lang>/<unite>.mp3`.
-3. **Montage** : `doubler.py --etape montage` re-rend chaque vidéo avec le
-   même moteur que `remonter-textes.sh` (mêmes images, mêmes mouvements,
-   même mixage sidechain), texte gravé dans la langue. RTL : l'arabe et
-   l'hébreu passent par Pango (`magick pango:`) pour un façonnage correct.
-4. **Publication** : `doubler.py --etape publier` dépose
-   `<uid>/<uuid>-<lang>.mp4/.jpg` dans le bucket `videos` (session
-   `selah_lumiere`) et met à jour `video_translations`.
+| Étape | Script | Sortie |
+|---|---|---|
+| 1. Narrations | `lang/<lang>.json` | 12 textes parlés + clôtures par langue |
+| 2. Voix | `generer-voix.py <dossier>` | `<lang>/<unite>.mp3` |
+| 3. Montage | `monter.py --voix … --sortie … --travail …` | `<lang>/<unite>.mp4` |
+| 4. Publication | `publier.py --videos … --mot-de-passe …` | bucket + `video_translations` |
 
-## Accès ElevenLabs
+Chaque étape est idempotente : relancer après une coupure reprend où ça
+s'était arrêté, sans refaire ni repayer ce qui existe.
 
-Deux chemins, au choix :
+## Narrations
 
-- **Connecteur MCP `ElevenLabs`** (vérifié le 2026-08-08, plan Creator
-  actif) : `text_to_speech` sans clé à gérer. C'est la voie normale.
-- `ELEVENLABS_API_KEY` en `sk_...` dans `~/.claude/.env.mcp` pour l'appel
-  HTTP direct de ce script. La valeur qui s'y trouve est un *identifiant*
-  de clé, refusé par l'API (`api_key_id_used_as_api_key`) — sans clé
-  valide, passer par le MCP.
+`narrations-fr.json` est extrait des scénarios d'origine. Les traductions
+(`lang/*.json`) suivent trois règles :
 
-Voix : `ZnEAYHVx6a73EykQUbao` (« Narrateur FR Neutre », clonée) — la même
-que les narrations françaises, pour garder le timbre d'une langue à l'autre.
+- la narration **commence par le verset**, cité mot pour mot dans une
+  traduction biblique établie de la langue (KJV, Reina-Valera, Almeida,
+  Riveduta, Luther, synodale, Van Dyck, Union chinoise, 口語訳, 개역한글) —
+  jamais une traduction inventée ;
+- la référence est écrite **en toutes lettres**, parce qu'une voix de
+  synthèse lit « 34:18 » de travers ;
+- la longueur vise **20 secondes** : 60 à 68 mots en latin, 55 à 63 en
+  russe, 105 à 125 signes en chinois, 130 à 155 en japonais, 115 à 140 en
+  coréen.
 
-Modèle : **`eleven_v3`**. `eleven_multilingual_v2` ne couvre pas l'hébreu ;
-`eleven_v3` couvre les douze langues du réseau.
+## Texte gravé
 
-Il faut aussi les images sources des unités (dossier `seed/images` de la
-session de montage) et la nappe `public/sons/ambiance-selah.m4a`.
+`planches.py` compose les planches avec **Chrome headless**, pas avec
+ImageMagick. Ce n'est pas un détour : cette installation d'ImageMagick n'a
+ni RAQM ni Pango (`magick -version` ne liste que freetype), donc l'arabe y
+sort dans l'ordre logique, lu à l'envers — constaté à l'écran. Le CJC, lui,
+ne se coupait pas en fin de ligne, faute d'espaces où couper. Un navigateur
+applique l'algorithme bidirectionnel, le façonnage contextuel et les règles
+de césure : une seule voie de rendu pour toutes les écritures, aucune ne
+devient un cas particulier qu'on oublie de retester.
 
-## Coût estimé
+## Voix
 
-12 unités × 11 langues × ~65 mots ≈ 8 600 mots ≈ 52 000 caractères de TTS,
-soit ~15 % du quota mensuel Creator (347 544 caractères).
+Deux voix en alternance, comme les scénarios français : Sarah
+(`EXAVITQu4vr4xnSDxMaL`, féminine) et Roger (`CwhRBWXzGAHq8TQ4Fs17`,
+masculine). Modèle **`eleven_v3`** — le seul à couvrir les onze écritures
+(`eleven_multilingual_v2` n'a pas l'hébreu).
+
+La clé API est lue dans l'environnement du serveur `elevenlabs-mcp` déjà
+lancé : le connecteur est authentifié, rien à ressaisir. Elle n'est ni
+écrite sur disque ni affichée.
+
+## Coût
+
+120 narrations ≈ 47 000 caractères, soit ~14 % du quota mensuel Creator
+(347 544 caractères).
 
 ⚠️ L'abonnement Creator porte une annulation programmée au **2026-08-23**.
 Le quota se réinitialise à cette même date : la tranche actuelle est la
 dernière si l'annulation n'est pas levée.
 
-## Reprise
+## Hébreu
 
-Chaque étape est idempotente : un fichier déjà produit n'est pas régénéré ;
-une ligne `video_translations` déjà pourvue de `storage_path` est sautée.
+Volontairement hors doublage. L'interface, les versets et les légendes
+restent traduits en hébreu ; seule la bande son reste française.
