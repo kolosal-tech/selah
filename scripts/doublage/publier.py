@@ -109,9 +109,13 @@ def main() -> None:
                 f"/rest/v1/video_translations?video_id=eq.{video_id}&lang=eq.{lang}",
                 json.dumps({"storage_path": chemins["mp4"],
                             "thumb_path": chemins["jpg"]}).encode(),
-                {**auth, "Content-Type": "application/json"}, anon)
-            if code >= 300:
-                echecs.append(f"{lang}/{unite} bascule : {code} {corps[:120]}")
+                {**auth, "Content-Type": "application/json",
+                 "Prefer": "return=representation"}, anon)
+            # Un 204 ne dit pas si une ligne a bougé : la RLS peut n'en avoir
+            # laissé passer aucune. On exige la ligne modifiée en retour.
+            modifiees = json.loads(corps or b"[]") if code < 300 else []
+            if code >= 300 or not modifiees:
+                echecs.append(f"{lang}/{unite} bascule sans effet : {code} {corps[:160]}")
                 print(echecs[-1], flush=True)
                 continue
             faits += 1

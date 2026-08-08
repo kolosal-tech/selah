@@ -61,7 +61,7 @@ def main() -> None:
                f"&author_id=eq.{UID}", None, auth, anon)
     lignes = {v["verse_ref"]: v for v in json.loads(corps)}
 
-    anciens, echecs = [], []
+    anciens, poses, echecs = [], [], []
     for unite in sorted(p.stem for p in videos.glob("*.mp4")):
         ligne = lignes[ref_fr[unite]]
         mp4 = videos / f"{unite}.mp4"
@@ -86,15 +86,26 @@ def main() -> None:
             print(erreur, flush=True)
             continue
 
+        # `Prefer: return=representation` est indispensable : sans lui,
+        # PostgREST répond 204 aussi bien quand il a modifié la ligne que
+        # quand la RLS ne lui en a laissé aucune. Un 204 ne prouve rien ;
+        # la ligne renvoyée, si.
         code, corps = appel(
             "PATCH", f"/rest/v1/videos?id=eq.{ligne['id']}",
             json.dumps({"storage_path": chemins["mp4"], "thumb_path": chemins["jpg"]}).encode(),
-            {**auth, "Content-Type": "application/json"}, anon)
-        if code >= 300:
-            echecs.append(f"{unite} bascule : {code} {corps[:120]}")
+            {**auth, "Content-Type": "application/json",
+             "Prefer": "return=representation"}, anon)
+        modifiees = json.loads(corps or b"[]") if code < 300 else []
+        if code >= 300 or not modifiees:
+            echecs.append(f"{unite} bascule sans effet : {code} {corps[:160]}")
+            print(echecs[-1], flush=True)
+            continue
+        if modifiees[0]["storage_path"] != chemins["mp4"]:
+            echecs.append(f"{unite} bascule incohérente : {modifiees[0]['storage_path']}")
             print(echecs[-1], flush=True)
             continue
 
+        poses.append(chemins["mp4"])
         for ancien in (ligne.get("storage_path"), ligne.get("thumb_path")):
             if ancien:
                 anciens.append(ancien)
@@ -104,15 +115,21 @@ def main() -> None:
         print(f"\n{len(echecs)} échec(s) — aucun ancien fichier supprimé")
         sys.exit(1)
 
-    # Un octet manquant côté service et on ne supprime rien.
+    # On ne vérifie pas « la base sert quelque chose » — elle servait déjà
+    # quelque chose avant. On vérifie que ce sont bien les NOUVEAUX chemins
+    # qui sont en place, et qu'ils répondent.
     code, corps = appel("GET", f"/rest/v1/videos?select=storage_path&author_id=eq.{UID}",
                         None, auth, anon)
-    for v in json.loads(corps):
-        c, octets = appel("GET", f"/storage/v1/object/public/videos/{v['storage_path']}",
+    en_base = {v["storage_path"] for v in json.loads(corps)}
+    manquants = [c for c in poses if c not in en_base]
+    if manquants:
+        sys.exit(f"{len(manquants)} chemin(s) neuf(s) absent(s) de la base — rien supprimé")
+    for chemin in poses:
+        c, octets = appel("GET", f"/storage/v1/object/public/videos/{chemin}",
                           None, None, anon)
         if c != 200 or len(octets) < 100_000:
-            sys.exit(f"remplacement non servi ({v['storage_path']}) — rien supprimé")
-    print(f"\nles 12 nouvelles versions sont servies")
+            sys.exit(f"remplacement non servi ({chemin}) — rien supprimé")
+    print(f"\nles {len(poses)} nouvelles versions sont en base et servies")
 
     code, corps = appel("DELETE", "/storage/v1/object/videos",
                         json.dumps({"prefixes": anciens}).encode(),
