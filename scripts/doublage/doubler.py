@@ -23,10 +23,17 @@ UID = "17a9bf8f-e809-4892-ab3b-78013d239e66"
 LANGUES = ["en", "es", "pt", "it", "de", "ru", "ar", "he", "zh", "ja", "ko"]
 RTL = {"ar", "he"}
 
-# Voix ElevenLabs par genre — mêmes alternances que la version française.
-# À renseigner après choix des voix (list-voices) : ids multilingues.
-VOIX = {"femme": os.environ.get("ELEVEN_VOIX_FEMME", ""),
-        "homme": os.environ.get("ELEVEN_VOIX_HOMME", "")}
+# Voix ElevenLabs. « Narrateur FR Neutre » est la voix clonée déjà utilisée
+# pour les douze narrations françaises : la garder sur toutes les langues
+# donne une continuité de timbre d'une version à l'autre.
+NARRATEUR = "ZnEAYHVx6a73EykQUbao"
+VOIX = {"femme": os.environ.get("ELEVEN_VOIX_FEMME", NARRATEUR),
+        "homme": os.environ.get("ELEVEN_VOIX_HOMME", NARRATEUR)}
+
+# eleven_multilingual_v2 ne couvre PAS l'hébreu (vérifié sur list_models) ;
+# eleven_v3 couvre les douze langues du réseau. Un seul modèle partout évite
+# une différence de timbre entre l'hébreu et le reste.
+MODELE = "eleven_v3"
 GENRE = {"01": "femme", "02": "homme", "03": "homme", "04": "femme",
          "05": "homme", "06": "femme", "07": "homme", "08": "homme",
          "09": "femme", "10": "homme", "11": "femme", "12": "homme"}
@@ -70,7 +77,8 @@ def etape_voix(dry: bool) -> None:
                 f"https://api.elevenlabs.io/v1/text-to-speech/{voix}",
                 data=json.dumps({
                     "text": texte,
-                    "model_id": "eleven_multilingual_v2",
+                    "model_id": MODELE,
+                    "language_code": lang,
                     "voice_settings": {"stability": 0.45, "similarity_boost": 0.8},
                 }).encode(),
                 headers={"xi-api-key": cle, "Content-Type": "application/json"},
