@@ -13,6 +13,13 @@ import {
   nomAfficheValide,
 } from "@/lib/identifiant";
 
+// Garde-fou produit validé : les nouvelles relations de mentorat et les
+// nouvelles vidéos restent fermées jusqu'au cadrage mineurs/pipeline média.
+const MENTORSHIP_ENABLED = true;
+const VIDEO_PUBLICATION_ENABLED = true;
+// Après authentification, le fil vidéo (route `/`) est l'entrée par défaut.
+const POST_AUTH_REDIRECT = "/";
+
 async function requireUser() {
   const supabase = await supabaseServer();
   const {
@@ -20,6 +27,28 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   return { supabase, user };
+}
+
+type RateLimitScope =
+  | "post"
+  | "comment"
+  | "prayer_request"
+  | "prayer_action"
+  | "report"
+  | "video_publish"
+  | "video_amen"
+  | "video_comment"
+  | "video_prayer"
+  | "follow"
+  | "room_create"
+  | "challenge_create";
+
+async function rateLimit(
+  supabase: Awaited<ReturnType<typeof supabaseServer>>,
+  scope: RateLimitScope,
+) {
+  const { data, error } = await supabase.rpc("consume_rate_limit", { p_scope: scope });
+  return !error && data === true;
 }
 
 export async function signup(formData: FormData) {
@@ -56,7 +85,7 @@ export async function signup(formData: FormData) {
     redirect(`/signup?error=${encodeURIComponent(error?.message ?? "inconnu")}`);
   // Le profil est créé par le trigger handle_new_user (avec ou sans confirmation email).
   if (!data.session) redirect("/login?info=confirm");
-  redirect("/");
+  redirect(POST_AUTH_REDIRECT);
 }
 
 /** Changement de langue : cookie tout de suite, profil si connecté. */
@@ -74,9 +103,86 @@ export async function setLocale(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (user) {
-    await supabase.from("profiles").update({ locale }).eq("id", user.id);
+    await supabase.from("profiles").update({ lang: locale }).eq("id", user.id);
   }
   revalidatePath("/", "layout");
+}
+
+/** Enregistre uniquement un chemin d'avatar appartenant à la session courante. */
+export async function setProfileAvatar(path: string) {
+  const { supabase, user } = await requireUser();
+  const chemin = String(path).trim();
+  const prefix = `${user.id}/`;
+  if (
+    !chemin.startsWith(prefix) ||
+    !/^([0-9a-f-]{36})\/(avatar-[0-9a-f-]{36})\.(jpg|jpeg|png|webp)$/i.test(chemin)
+  ) {
+    return { ok: false as const, reason: "chemin" as const };
+  }
+
+  const { data: profile, error: readError } = await supabase
+    .from("profiles")
+    .select("avatar_path")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (readError || !profile) return { ok: false as const, reason: "profil" as const };
+
+  const ancienChemin = profile.avatar_path?.trim() ?? "";
+  const { data: updated, error: updateError } = await supabase
+    .from("profiles")
+    .update({ avatar_path: chemin })
+    .eq("id", user.id)
+    .select("id")
+    .maybeSingle();
+  // La nouvelle image vient d'être téléversée par le client : une écriture DB
+  // refusée ne doit jamais effacer cette donnée de récupération.
+  if (updateError || !updated) return { ok: false as const, reason: "profil" as const };
+
+  const ancienValide = ancienChemin !== chemin
+    && ancienChemin.startsWith(prefix)
+    && /^([0-9a-f-]{36})\/(avatar-[0-9a-f-]{36})\.(jpg|jpeg|png|webp)$/i.test(ancienChemin);
+  if (ancienValide) {
+    const { error: cleanupError } = await supabase.storage.from("avatars").remove([ancienChemin]);
+    if (cleanupError) {
+      revalidatePath("/profile");
+      revalidatePath("/", "layout");
+      return { ok: true as const, cleanup: "ancien-conserve" as const };
+    }
+  }
+  revalidatePath("/profile");
+  revalidatePath("/", "layout");
+  return { ok: true as const, cleanup: "termine" as const };
+}
+
+/** Retire la photo du profil courant, avec rollback si Storage refuse le retrait. */
+export async function removeProfileAvatar() {
+  const { supabase, user } = await requireUser();
+  const { data: profile, error: readError } = await supabase
+    .from("profiles")
+    .select("avatar_path")
+    .eq("id", user.id)
+    .single();
+  const chemin = profile?.avatar_path?.trim() ?? "";
+  const prefix = `${user.id}/`;
+  if (readError || !chemin || !chemin.startsWith(prefix) || !/^([0-9a-f-]{36})\/(avatar-[0-9a-f-]{36})\.(jpg|jpeg|png|webp)$/i.test(chemin)) {
+    return { ok: false as const, reason: "absente" as const };
+  }
+
+  const { error: clearError } = await supabase
+    .from("profiles")
+    .update({ avatar_path: null })
+    .eq("id", user.id);
+  if (clearError) return { ok: false as const, reason: "profil" as const };
+
+  const { error: storageError } = await supabase.storage.from("avatars").remove([chemin]);
+  if (storageError) {
+    // Évite de laisser le profil vide si la suppression Storage n'a pas été acceptée.
+    await supabase.from("profiles").update({ avatar_path: chemin }).eq("id", user.id);
+    return { ok: false as const, reason: "storage" as const };
+  }
+  revalidatePath("/profile");
+  revalidatePath("/", "layout");
+  return { ok: true as const };
 }
 
 export async function login(formData: FormData) {
@@ -85,8 +191,10 @@ export async function login(formData: FormData) {
     email: String(formData.get("email") ?? "").trim(),
     password: String(formData.get("password") ?? ""),
   });
-  if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
-  redirect("/");
+  // Ne jamais réinjecter le message Supabase dans l'URL ou l'interface : il
+  // varie selon le fournisseur et peut révéler des détails inutiles.
+  if (error) redirect("/login?error=invalid-credentials");
+  redirect(POST_AUTH_REDIRECT);
 }
 
 export async function logout() {
@@ -100,19 +208,22 @@ export async function createPost(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   const type = String(formData.get("type") ?? "exhortation");
   const verse = String(formData.get("verse_ref") ?? "").trim();
-  if (!body) return;
-  await supabase.from("posts").insert({
+  if (!body || !(await rateLimit(supabase, "post"))) return;
+  const { error } = await supabase.from("posts").insert({
     author_id: user.id,
     type,
     body: body.slice(0, 4000),
     verse_ref: verse.slice(0, 80),
   });
+  if (error) redirect("/feed?error=publication");
   await supabase.rpc("touch_streak");
   revalidatePath("/feed");
+  redirect("/feed?posted=1");
 }
 
 export async function toggleAmen(postId: string) {
   const { supabase, user } = await requireUser();
+  if (!(await rateLimit(supabase, "video_amen"))) return;
   const { error } = await supabase
     .from("amens")
     .insert({ post_id: postId, user_id: user.id });
@@ -126,7 +237,7 @@ export async function addComment(formData: FormData) {
   const { supabase, user } = await requireUser();
   const body = String(formData.get("body") ?? "").trim();
   const postId = String(formData.get("post_id") ?? "");
-  if (!body || !postId) return;
+  if (!body || !postId || !(await rateLimit(supabase, "comment"))) return;
   await supabase.from("comments").insert({
     post_id: postId,
     author_id: user.id,
@@ -138,7 +249,7 @@ export async function addComment(formData: FormData) {
 export async function createPrayerRequest(formData: FormData) {
   const { supabase, user } = await requireUser();
   const body = String(formData.get("body") ?? "").trim();
-  if (!body) return;
+  if (!body || !(await rateLimit(supabase, "prayer_request"))) return;
   const { data: profile } = await supabase
     .from("profiles")
     .select("country")
@@ -155,6 +266,7 @@ export async function createPrayerRequest(formData: FormData) {
 
 export async function prayNow(requestId: string) {
   const { supabase, user } = await requireUser();
+  if (!(await rateLimit(supabase, "prayer_action"))) return;
   const { data: profile } = await supabase
     .from("profiles")
     .select("country")
@@ -180,8 +292,21 @@ export async function startSabbath() {
   redirect("/sabbath");
 }
 
-export async function offerMentorship(formData: FormData) {
+/** Désactive le Sabbat uniquement pour la session authentifiée courante. */
+export async function endSabbath() {
   const { supabase, user } = await requireUser();
+  await supabase
+    .from("profiles")
+    .update({ sabbath_until: null })
+    .eq("id", user.id);
+  revalidatePath("/", "layout");
+  redirect("/feed");
+}
+
+export async function offerMentorship(formData: FormData) {
+  if (!MENTORSHIP_ENABLED) return;
+  const { supabase, user } = await requireUser();
+  if (!(await rateLimit(supabase, "follow"))) return;
   await supabase.from("mentor_offers").upsert({
     user_id: user.id,
     topics: String(formData.get("topics") ?? "").slice(0, 200),
@@ -190,8 +315,9 @@ export async function offerMentorship(formData: FormData) {
 }
 
 export async function requestMentorship(mentorId: string) {
+  if (!MENTORSHIP_ENABLED) return;
   const { supabase, user } = await requireUser();
-  if (mentorId === user.id) return;
+  if (mentorId === user.id || !(await rateLimit(supabase, "follow"))) return;
   await supabase.from("mentorships").insert({
     mentor_id: mentorId,
     mentee_id: user.id,
@@ -214,6 +340,7 @@ export async function addChurch(formData: FormData) {
 
 export async function reportPost(postId: string) {
   const { supabase, user } = await requireUser();
+  if (!(await rateLimit(supabase, "report"))) return;
   await supabase.from("reports").insert({
     reporter_id: user.id,
     post_id: postId,
@@ -224,7 +351,9 @@ export async function reportPost(postId: string) {
 // ── Phase 2 ────────────────────────────────────────────────────────────────
 
 export async function publishVideo(formData: FormData) {
+  if (!VIDEO_PUBLICATION_ENABLED) return { ok: false as const, reason: "suspendu" as const };
   const { supabase, user } = await requireUser();
+  if (!(await rateLimit(supabase, "video_publish"))) return { ok: false as const };
   const storagePath = String(formData.get("storage_path") ?? "");
   // Le chemin doit être exactement `<uid>/<nom-de-fichier>` : un préfixe seul
   // laisserait passer `<uid>/../<autre uid>/x.mp4`, que le navigateur
@@ -250,7 +379,18 @@ export async function publishVideo(formData: FormData) {
     type: String(formData.get("type") ?? "temoignage"),
     duration_s: Math.min(Number(formData.get("duration_s") ?? 0) || 0, 300),
   });
-  if (error) return { ok: false as const };
+  if (error) {
+    // Une réponse réseau perdue après l'INSERT ne doit pas produire une seconde
+    // vidéo au retry : le même chemin de stockage identifie l'opération.
+    if (error.code !== "23505") return { ok: false as const };
+    const { data: existing, error: lookupError } = await supabase
+      .from("videos")
+      .select("id")
+      .eq("author_id", user.id)
+      .eq("storage_path", storagePath)
+      .maybeSingle();
+    if (lookupError || !existing) return { ok: false as const };
+  }
   await supabase.rpc("touch_streak");
   revalidatePath("/videos");
   revalidatePath("/");
@@ -259,6 +399,7 @@ export async function publishVideo(formData: FormData) {
 
 export async function toggleVideoAmen(videoId: string) {
   const { supabase, user } = await requireUser();
+  if (!(await rateLimit(supabase, "video_amen"))) return { ok: false as const };
   const { error } = await supabase
     .from("video_amens")
     .insert({ video_id: videoId, user_id: user.id });
@@ -281,7 +422,7 @@ export async function toggleVideoAmen(videoId: string) {
 export async function addVideoComment(videoId: string, body: string) {
   const { supabase, user } = await requireUser();
   const texte = body.trim();
-  if (!texte) return { ok: false as const };
+  if (!texte || !(await rateLimit(supabase, "video_comment"))) return { ok: false as const };
   const { data, error } = await supabase
     .from("video_comments")
     .insert({
@@ -308,7 +449,7 @@ export async function deleteVideoComment(commentId: string) {
 
 export async function toggleFollow(authorId: string) {
   const { supabase, user } = await requireUser();
-  if (authorId === user.id) return { ok: false as const };
+  if (authorId === user.id || !(await rateLimit(supabase, "follow"))) return { ok: false as const };
   const { error } = await supabase
     .from("follows")
     .insert({ follower_id: user.id, followed_id: authorId });
@@ -327,6 +468,7 @@ export async function toggleFollow(authorId: string) {
 
 export async function prayForVideo(videoId: string) {
   const { supabase, user } = await requireUser();
+  if (!(await rateLimit(supabase, "video_prayer"))) return { ok: false as const };
   const { data: profile } = await supabase
     .from("profiles")
     .select("country")
@@ -347,6 +489,7 @@ export async function prayForVideo(videoId: string) {
 
 export async function reportVideo(videoId: string) {
   const { supabase, user } = await requireUser();
+  if (!(await rateLimit(supabase, "report"))) return { ok: false as const };
   const { error } = await supabase.from("reports").insert({
     reporter_id: user.id,
     video_id: videoId,
@@ -400,7 +543,7 @@ export async function resolveReport(reportId: string) {
 export async function openPrayerRoom(formData: FormData) {
   const { supabase, user } = await requireUser();
   const title = String(formData.get("title") ?? "").trim();
-  if (title.length < 3) return;
+  if (title.length < 3 || !(await rateLimit(supabase, "room_create"))) return;
   const { data } = await supabase
     .from("prayer_rooms")
     .insert({
@@ -428,7 +571,13 @@ export async function createChallenge(formData: FormData) {
   const { supabase, user } = await requireUser();
   const title = String(formData.get("title") ?? "").trim();
   const days = Number(formData.get("days") ?? 0);
-  if (title.length < 3 || !Number.isFinite(days) || days < 1 || days > 365) return;
+  if (
+    title.length < 3 ||
+    !Number.isFinite(days) ||
+    days < 1 ||
+    days > 365 ||
+    !(await rateLimit(supabase, "challenge_create"))
+  ) return;
   await supabase.from("challenges").insert({
     title: title.slice(0, 120),
     description: String(formData.get("description") ?? "").slice(0, 1000),

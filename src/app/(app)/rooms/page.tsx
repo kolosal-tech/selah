@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { openPrayerRoom } from "@/app/actions";
-import { Radio, Plus, Users, Bell } from "lucide-react";
+import { Radio, Plus, Headphones, Bell } from "lucide-react";
 import { getMessages } from "@/i18n/server";
 
 /** Onde sonore : hauteurs déterministes (même rendu serveur et client). */
@@ -73,7 +73,7 @@ export default async function Rooms() {
 
       {/* Cartes de salles en direct */}
       <div className="grid gap-6 pt-3">
-        {(rooms ?? []).map((r, idx) => {
+        {(rooms ?? []).map((r) => {
           const hote = r.profiles?.username ?? m.commun.disciple;
           return (
             <Link
@@ -119,8 +119,8 @@ export default async function Rooms() {
               {/* Pied de carte */}
               <div className="mt-3.5 flex items-center justify-between border-t border-white/10 pt-3.5">
                 <span className="flex items-center gap-2 text-[13px] text-white/60">
-                  <Users className="h-4 w-4" />
-                  <span>{m.rooms.auditeurs(12 + idx * 7)}</span>
+                  <Headphones className="h-4 w-4" />
+                  <span>{m.rooms.audioPilote}</span>
                 </span>
                 <span className="rounded-full bg-gradient-to-r from-amber-200 to-teal-300 px-[26px] py-2.5 text-[15px] font-bold text-slate-950 shadow-[0_0_22px_rgba(94,234,212,0.3)] transition group-hover:scale-105">
                   {m.rooms.seJoindre}

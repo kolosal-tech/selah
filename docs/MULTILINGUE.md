@@ -28,7 +28,7 @@ entend le français. C'est la dégradation voulue, jamais un écran vide.
 2. **Inscription** : le pays est un vrai choix, pas une devinette — liste
    déroulante pré-remplie par la géolocalisation, noms de pays affichés dans
    la langue courante via `Intl.DisplayNames`. Le choix bascule la langue
-   immédiatement et s'enregistre dans `profiles.locale`.
+   immédiatement et s'enregistre dans `profiles.lang`.
 3. **À tout moment** : le sélecteur (globe) présent sur chaque écran. Chaque
    langue y est écrite dans sa propre écriture — un lecteur coréen cherche
    « 한국어 », pas « Korean ».

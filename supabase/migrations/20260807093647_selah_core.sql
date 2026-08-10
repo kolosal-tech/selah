@@ -1,0 +1,2 @@
+-- Alias d'historique production de 0001_selah_core.sql.
+-- Aucun SQL : le schéma canonique est déjà reconstruit par 0001.

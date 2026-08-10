@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createPrayerRequest, prayNow } from "@/app/actions";
-import { HeartHandshake, Send, Sparkles, CheckCircle2 } from "lucide-react";
+import { HeartHandshake, Send, Sparkles, CheckCircle2, Headphones } from "lucide-react";
 import { useMessages } from "@/i18n/client";
 
 export interface PrayerItem {
@@ -12,7 +13,7 @@ export interface PrayerItem {
   answered: boolean;
   pray_count: number;
   created_at: string;
-  profiles?: { username: string } | null;
+  username: string | null;
 }
 
 export function PrayerClientView({ initialRequests }: { initialRequests: PrayerItem[] }) {
@@ -42,6 +43,20 @@ export function PrayerClientView({ initialRequests }: { initialRequests: PrayerI
         <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">{m.priere.titre}</h1>
         <p className="mt-1 text-sm text-white/70">{m.priere.sousTitre}</p>
       </div>
+
+      <Link
+        href="/rooms"
+        className="glass-card flex items-center justify-between gap-4 p-4 transition hover:border-teal-300/30 hover:bg-white/10"
+      >
+        <span className="flex items-center gap-3">
+          <Headphones className="h-5 w-5 text-teal-300" />
+          <span>
+            <strong className="block text-sm text-white">{m.rooms.audioTitre}</strong>
+            <span className="text-xs text-white/55">{m.rooms.audioPilote}</span>
+          </span>
+        </span>
+        <span className="text-xs font-semibold text-amber-200">{m.rooms.seJoindre} →</span>
+      </Link>
 
       <form
         action={createPrayerRequest}
@@ -82,13 +97,13 @@ export function PrayerClientView({ initialRequests }: { initialRequests: PrayerI
           return (
             <article
               key={r.id}
-              className="glass-card glass-card-hover p-5 space-y-3 relative overflow-hidden"
+              className="prayer-card glass-card glass-card-hover relative space-y-3 overflow-hidden p-5"
             >
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-amber-300">
                   {r.anonymous
                     ? m.priere.discipleAnonyme
-                    : `@${r.profiles?.username ?? m.commun.frere}`}
+                    : `@${r.username ?? m.commun.frere}`}
                 </span>
                 {r.answered && (
                   <span className="flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-3 py-1 text-[11px] font-semibold text-emerald-300 shadow-sm">
@@ -104,7 +119,10 @@ export function PrayerClientView({ initialRequests }: { initialRequests: PrayerI
 
               <div className="flex items-center justify-between pt-2 border-t border-white/10">
                 <button
+                  type="button"
                   onClick={() => handlePray(r.id)}
+                  aria-label={m.priere.priePourToi}
+                  aria-pressed={isGlowing}
                   className={`relative flex items-center gap-2.5 rounded-full px-5 py-2 text-xs font-bold transition-all duration-300 ${
                     isGlowing
                       ? "bg-amber-400 text-slate-950 shadow-[0_0_30px_10px_rgba(245,158,11,0.6)] scale-105 prayer-halo"

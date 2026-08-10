@@ -20,7 +20,6 @@ export default async function Mentorship() {
 
   return (
     <main className="flex flex-col gap-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-extrabold text-gradient-gold tracking-tight">{m.mentorat.titre}</h1>
         <p className="mt-1 text-sm text-white/70">
@@ -28,7 +27,6 @@ export default async function Mentorship() {
         </p>
       </div>
 
-      {/* Form to offer mentorship */}
       <form
         action={offerMentorship}
         className="glass-card p-5 flex flex-col sm:flex-row gap-3 shadow-2xl relative overflow-hidden"
@@ -44,7 +42,6 @@ export default async function Mentorship() {
         </button>
       </form>
 
-      {/* Mentors available list */}
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-white/90 flex items-center gap-2">
           <Users className="h-5 w-5 text-emerald-400" />
@@ -89,18 +86,17 @@ export default async function Mentorship() {
         </div>
       </section>
 
-      {/* Mes mentorats */}
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-white/90">{m.mentorat.mesMentorats}</h2>
         <div className="grid gap-3">
-          {(mine ?? []).map((m) => (
-            <div key={m.id} className="glass-card p-4 flex items-center justify-between text-xs">
+          {(mine ?? []).map((mentorat) => (
+            <div key={mentorat.id} className="glass-card p-4 flex items-center justify-between text-xs">
               <span className="text-white/80">
-                <strong className="text-amber-300">@{m.mentor?.username}</strong> →{" "}
-                <strong className="text-teal-300">@{m.mentee?.username}</strong>
+                <strong className="text-amber-300">@{mentorat.mentor?.username}</strong> →{" "}
+                <strong className="text-teal-300">@{mentorat.mentee?.username}</strong>
               </span>
               <span className="rounded-full bg-amber-500/20 text-amber-300 px-3 py-1 font-semibold border border-amber-500/30">
-                {m.status}
+                {mentorat.status}
               </span>
             </div>
           ))}
@@ -114,4 +110,3 @@ export default async function Mentorship() {
     </main>
   );
 }
-

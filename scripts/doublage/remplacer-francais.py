@@ -11,6 +11,7 @@ Les lignes `videos` étant conservées, les amens, prières et commentaires
 déjà reçus restent attachés à leur vidéo.
 """
 import argparse
+import getpass
 import json
 import os
 import pathlib
@@ -39,7 +40,6 @@ def appel(methode, chemin, corps=None, entetes=None, anon=""):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--videos", required=True, help="dossier des mp4 français")
-    ap.add_argument("--mot-de-passe", required=True)
     a = ap.parse_args()
 
     anon = os.environ["ANON"]
@@ -48,8 +48,11 @@ def main() -> None:
     fr = json.load(open(ici / "narrations-fr.json"))
     ref_fr = {u: v["verset_fr"] for u, v in fr.items()}
 
+    mot_de_passe = getpass.getpass("Mot de passe du compte de publication : ")
+    if not mot_de_passe:
+        sys.exit("Mot de passe vide : publication annulée.")
     code, corps = appel("POST", "/auth/v1/token?grant_type=password",
-                        json.dumps({"email": COURRIEL, "password": a.mot_de_passe}).encode(),
+                        json.dumps({"email": COURRIEL, "password": mot_de_passe}).encode(),
                         {"Content-Type": "application/json"}, anon)
     if code != 200:
         sys.exit(f"connexion refusée : {corps[:200]}")

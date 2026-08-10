@@ -1,0 +1,2 @@
+-- Alias d'historique production de 0002_selah_lockdown_functions.sql.
+-- Aucun SQL : le schéma canonique est déjà reconstruit par 0002.

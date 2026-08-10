@@ -9,9 +9,9 @@ import {
 const NOW = new Date("2026-08-07T12:00:00Z");
 
 describe("sabbathEnd", () => {
-  it("ajoute 24 h", () => {
-    expect(sabbathEnd(NOW).toISOString()).toBe("2026-08-08T12:00:00.000Z");
-    expect(SABBATH_HOURS).toBe(24);
+  it("ajoute 12 h", () => {
+    expect(sabbathEnd(NOW).toISOString()).toBe("2026-08-08T00:00:00.000Z");
+    expect(SABBATH_HOURS).toBe(12);
   });
 });
 

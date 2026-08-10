@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { isSabbathActive, sabbathRemainingLabel } from "@/lib/sabbath";
-import { startSabbath } from "@/app/actions";
+import { endSabbath, startSabbath } from "@/app/actions";
 import { AmbianceSonore } from "@/app/ambiance-sonore";
 import { getMessages } from "@/i18n/server";
 
@@ -15,7 +15,7 @@ export default async function Sabbath() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("sabbath_until")
+    .select("username, sabbath_until")
     .eq("id", user.id)
     .single();
 
@@ -41,6 +41,14 @@ export default async function Sabbath() {
           <p className="text-sm text-white/70">
             {m.sabbat.profite}
           </p>
+          <p className="text-xs text-white/45">
+            Compte connecté : <strong className="text-white/70">@{profile?.username ?? "test"}</strong>
+          </p>
+          <form action={endSabbath}>
+            <button className="rounded-full border border-amber-300/50 px-6 py-2 text-sm text-amber-200 transition hover:bg-amber-300/15">
+              {m.sabbat.desactiver}
+            </button>
+          </form>
         </>
       ) : (
         <>

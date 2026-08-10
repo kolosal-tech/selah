@@ -6,21 +6,32 @@ import {
   localePourAcceptLanguage,
   localePourPays,
 } from "@/i18n/config";
+import { isPublicPath } from "@/lib/public-paths";
 
-// `/sw.js` et `/hors-ligne` DOIVENT rester publics : le navigateur récupère le
-// service worker sans cookie applicatif, et la page de repli doit s'afficher
-// justement quand la session ne peut pas être vérifiée.
-const PUBLIC_PATHS = [
-  "/",
-  "/decouvrir",
-  "/login",
-  "/signup",
-  "/manifest.json",
-  "/sw.js",
-  "/hors-ligne",
-];
+function withDefaultLocale(request: NextRequest, response: NextResponse) {
+  if (estLocale(request.cookies.get(COOKIE_LOCALE)?.value)) return response;
+
+  const pays = request.headers.get("x-vercel-ip-country");
+  const locale = pays
+    ? localePourPays(pays)
+    : (localePourAcceptLanguage(request.headers.get("accept-language")) ?? "en");
+  response.cookies.set(COOKIE_LOCALE, locale, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
+  return response;
+}
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Les pages publiques servent aussi de témoin de disponibilité : elles ne
+  // doivent pas dépendre d'un aller-retour Supabase Auth pour s'afficher.
+  if (isPublicPath(pathname)) {
+    return withDefaultLocale(request, NextResponse.next({ request }));
+  }
+
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,30 +54,16 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-  const isPublic =
-    PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/api/");
-  if (!user && !isPublic) {
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return withDefaultLocale(request, NextResponse.redirect(url));
   }
 
   // Première visite sans langue choisie : pays (géo-IP Vercel), sinon langue
   // du navigateur. Le cookie est posé un an ; le sélecteur de langue et
   // l'inscription le réécrivent.
-  if (!estLocale(request.cookies.get(COOKIE_LOCALE)?.value)) {
-    const pays = request.headers.get("x-vercel-ip-country");
-    const locale = pays
-      ? localePourPays(pays)
-      : (localePourAcceptLanguage(request.headers.get("accept-language")) ?? "en");
-    response.cookies.set(COOKIE_LOCALE, locale, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-    });
-  }
-  return response;
+  return withDefaultLocale(request, response);
 }
 
 export const config = {

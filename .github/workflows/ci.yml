@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - selah-mvp
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.13.0
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: NEXT_TELEMETRY_DISABLED=1 pnpm exec next typegen
+      - run: pnpm lint
+      - run: pnpm exec tsc --noEmit --incremental false
+      - run: pnpm test
+      - run: pnpm test:rls
+      - run: pnpm test:schema
+      - run: NEXT_TELEMETRY_DISABLED=1 pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright test tests/e2e/public.spec.ts

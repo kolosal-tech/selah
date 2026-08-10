@@ -34,12 +34,21 @@ import { FloatingPillNav, MotSelah } from "./nav-components";
 import { useLocale, useMessages } from "@/i18n/client";
 import { pseudo } from "@/i18n/config";
 import type { Messages } from "@/i18n/messages";
+import { feedCursorFilter } from "@/lib/feed-cursor";
+import {
+  readAppPreferences,
+  subscribeAppPreferences,
+  updateAppPreference,
+} from "@/lib/app-preferences";
+import { isAudioStoragePath } from "@/lib/media-files";
 
 export type FeedVideo = {
   id: string;
   author_id: string;
   storage_path: string;
   thumb_path: string | null;
+  media_url?: string | null;
+  thumb_url?: string | null;
   caption: string | null;
   verse_ref: string | null;
   type: string;
@@ -61,6 +70,8 @@ type Commentaire = {
   username: string;
 };
 
+type Amenateur = { id: string; username: string };
+
 const TYPE_STYLE: Record<
   string,
   { bg: string; icon: React.ComponentType<{ className?: string }> }
@@ -75,7 +86,6 @@ const TYPE_STYLE: Record<
 const PAGE = 24;
 /** Fenêtre de préchargement : seules les vidéos à ±2 de l'écran ont un src. */
 const FENETRE = 2;
-const CLE_SON = "selah:son-active";
 
 function formatCompte(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
@@ -129,6 +139,9 @@ export function VerticalFeed({
   const [toast, setToast] = useState<string | null>(null);
   const [partage, setPartage] = useState<string | null>(null);
   const [signalee, setSignalee] = useState<Set<string>>(new Set());
+  const [amenOuverte, setAmenOuverte] = useState<FeedVideo | null>(null);
+  const [amenateurs, setAmenateurs] = useState<Amenateur[]>([]);
+  const [chargeAmenateurs, setChargeAmenateurs] = useState(false);
 
   // Panneau commentaires : chargé à l'ouverture depuis la base.
   const [ouverte, setOuverte] = useState<FeedVideo | null>(null);
@@ -138,37 +151,46 @@ export function VerticalFeed({
   const [envoiCommentaire, setEnvoiCommentaire] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const mediaRefs = useRef<(HTMLMediaElement | null)[]>([]);
   const chargementRef = useRef(false);
   const activeRef = useRef(0);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const base = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/`;
+  async function signerMedias(elements: FeedVideo[]): Promise<FeedVideo[]> {
+    const paths = [
+      ...new Set(
+        elements
+          .flatMap((v) => [v.storage_path, v.thumb_path])
+          .filter((path): path is string => Boolean(path)),
+      ),
+    ];
+    if (paths.length === 0) return elements;
+    const { data } = await supabaseBrowser().storage.from("videos").createSignedUrls(paths, 60);
+    const urls = new Map((data ?? []).map((item) => [item.path, item.signedUrl]));
+    return elements.map((v) => ({
+      ...v,
+      media_url: urls.get(v.storage_path) ?? null,
+      thumb_url: v.thumb_path ? (urls.get(v.thumb_path) ?? null) : null,
+    }));
+  }
 
-  // Choix de son mémorisé : muet par défaut (contrainte navigateur), mais si
-  // l'utilisateur a déjà activé le son une fois, on le restaure dès le
-  // premier rendu client.
+  // Muet au rendu serveur, puis synchronisé avec le choix du profil et ses
+  // changements dans le même onglet ou dans un autre onglet.
   useEffect(() => {
-    // Différé d'une frame : lu après l'hydratation, sans setState synchrone
-    // dans l'effet (le serveur rend toujours muet).
-    const t = requestAnimationFrame(() => {
-      try {
-        if (localStorage.getItem(CLE_SON) === "1") setMuted(false);
-      } catch {
-        // stockage indisponible (navigation privée stricte) : rester muet
-      }
-    });
-    return () => cancelAnimationFrame(t);
+    const synchroniser = () => setMuted(!readAppPreferences().feedSound);
+    const t = requestAnimationFrame(synchroniser);
+    const unsubscribe = subscribeAppPreferences(synchroniser);
+    return () => {
+      cancelAnimationFrame(t);
+      unsubscribe();
+    };
   }, []);
 
   function basculerSon() {
-    setMuted((m) => {
-      try {
-        localStorage.setItem(CLE_SON, m ? "1" : "0");
-      } catch {}
-      return !m;
-    });
+    const feedSound = muted;
+    setMuted(!feedSound);
+    updateAppPreference("feedSound", feedSound);
   }
 
   // Observe chaque carte : celle qui occupe l'écran devient active.
@@ -197,7 +219,7 @@ export function VerticalFeed({
 
   // Lecture : la vidéo active joue, les autres s'arrêtent.
   useEffect(() => {
-    videoRefs.current.forEach((v, i) => {
+    mediaRefs.current.forEach((v, i) => {
       if (!v) return;
       v.muted = muted;
       if (i === active && !paused) {
@@ -224,7 +246,7 @@ export function VerticalFeed({
       raf = requestAnimationFrame(() => {
         raf = 0;
         const h = container!.clientHeight;
-        videoRefs.current.forEach((vid) => {
+        mediaRefs.current.forEach((vid) => {
           if (!vid) return;
           const rect = vid.getBoundingClientRect();
           const sortie = Math.min(1, Math.abs(rect.top) / h);
@@ -240,17 +262,24 @@ export function VerticalFeed({
     };
   }, [videos.length]);
 
-  // Pagination infinie : même tri que le serveur (rang_auteur, score).
+  // Pagination infinie cléset : même tri que le serveur (rang_auteur, score,
+  // id), sans OFFSET qui devient coûteux et instable quand le feed évolue.
   useEffect(() => {
     if (fin || chargementRef.current || active < videos.length - 3) return;
     chargementRef.current = true;
-    const depuis = videos.length;
+    const filter = feedCursorFilter(videos.at(-1));
+    if (!filter) {
+      chargementRef.current = false;
+      return;
+    }
     supabaseBrowser()
       .from("videos_feed")
       .select("*")
       .order("rang_auteur", { ascending: true })
       .order("score", { ascending: false })
-      .range(depuis, depuis + PAGE - 1)
+      .order("id", { ascending: true })
+      .or(filter)
+      .limit(PAGE)
       .then(async ({ data, error }) => {
         chargementRef.current = false;
         if (error) return; // on ne conclut pas « fin » : retentera au prochain passage
@@ -278,12 +307,13 @@ export function VerticalFeed({
               : v;
           });
         }
+        nouvelles = await signerMedias(nouvelles);
         setVideos((prev) => {
           const vus = new Set(prev.map((v) => v.id));
           return [...prev, ...nouvelles.filter((v) => !vus.has(v.id))];
         });
       });
-  }, [active, videos.length, fin, locale]);
+  }, [active, videos, fin, locale]);
 
   // Flèches clavier.
   useEffect(() => {
@@ -466,27 +496,66 @@ export function VerticalFeed({
     }
   }
 
+  async function ouvrirAmenateurs(v: FeedVideo) {
+    if (!me) {
+      exigeCompte();
+      return;
+    }
+    setAmenOuverte(v);
+    setAmenateurs([]);
+    setChargeAmenateurs(true);
+    const { data: lignes, error } = await supabaseBrowser()
+      .from("video_amens")
+      .select("user_id, profiles(username)")
+      .eq("video_id", v.id)
+      .limit(100);
+    if (error) {
+      setChargeAmenateurs(false);
+      return;
+    }
+    setAmenateurs(
+      (lignes ?? [])
+        .map((ligne) => {
+          const profil = Array.isArray(ligne.profiles) ? ligne.profiles[0] : ligne.profiles;
+          return profil?.username ? { id: ligne.user_id, username: profil.username } : null;
+        })
+        .filter((p): p is { id: string; username: string } => Boolean(p)),
+    );
+    setChargeAmenateurs(false);
+  }
+
   async function ouvrirCommentaires(v: FeedVideo) {
+    const startedAt = performance.now();
     setOuverte(v);
     setCommentaires([]);
     if (!me) return; // l'anonyme voit l'invitation à se connecter
     setChargeCommentaires(true);
-    const { data } = await supabaseBrowser()
+    const { data: lignes, error } = await supabaseBrowser()
       .from("video_comments")
-      .select("id, body, created_at, profiles!video_comments_author_id_fkey(username)")
+      .select("id, body, created_at, author_id, profiles(username)")
       .eq("video_id", v.id)
       .order("created_at", { ascending: false })
       .limit(100);
+    if (error) {
+      setChargeCommentaires(false);
+      return;
+    }
     setCommentaires(
-      (data ?? []).map((c) => ({
+      (lignes ?? []).map((c) => ({
         id: c.id,
         body: c.body,
         created_at: c.created_at,
         username:
-          (c.profiles as unknown as { username?: string } | null)?.username ?? m.commun.disciple,
+          (Array.isArray(c.profiles) ? c.profiles[0] : c.profiles)?.username ?? m.commun.disciple,
       })),
     );
     setChargeCommentaires(false);
+    if (process.env.NODE_ENV !== "production") {
+      console.debug("[perf] ouverture commentaires", {
+        duréeMs: Math.round(performance.now() - startedAt),
+        commentaires: lignes?.length ?? 0,
+      });
+    }
   }
 
   async function envoyerCommentaire(e: React.FormEvent) {
@@ -510,7 +579,7 @@ export function VerticalFeed({
         ]);
         setCommentCounts((prev) => ({
           ...prev,
-          [ouverte.id]: nbCommentaires(ouverte) + 1,
+          [ouverte.id]: (prev[ouverte.id] ?? ouverte.comment_count) + 1,
         }));
         setNouveauCommentaire("");
       } else {
@@ -523,28 +592,42 @@ export function VerticalFeed({
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-black text-white">
+    <div
+      data-load-marker="selah-authenticated-feed-v1"
+      className="fixed inset-0 overflow-hidden bg-black text-white"
+    >
       {/* Barre haute */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent px-5 pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <Link href="/" className="pointer-events-auto flex items-center">
           <MotSelah taille={38} />
         </Link>
-        <div className="pointer-events-auto flex items-center gap-2">
+        <div className="pointer-events-auto flex items-center gap-3 sm:gap-4">
           <button
             onClick={basculerSon}
             aria-label={muted ? m.video.activerSon : m.video.couperSon}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-xl transition hover:bg-white/20"
+            aria-pressed={!muted}
+            title={muted ? m.video.activerSon : m.video.couperSon}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-black/60 backdrop-blur-xl transition hover:bg-white/15 sm:h-10 sm:w-10 ${
+              !muted && !paused
+                ? "border-white/25 text-white"
+                : "border-rose-400/70 text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.65)]"
+            }`}
           >
-            {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            {muted ? (
+              <VolumeX className="h-5 w-5 stroke-[2.5]" />
+            ) : (
+              <Volume2 className="h-5 w-5 stroke-[2.5]" />
+            )}
           </button>
           {me ? (
             <Link
               href="/videos"
+              aria-label={m.video.publierVideoAudio}
               className="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-500 p-[1px] shadow-lg shadow-amber-500/20 transition hover:scale-105"
             >
               <span className="flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl">
-                <Camera className="h-4 w-4 text-amber-400" />
-                <span>{m.video.temoigner}</span>
+                <Camera className="h-4 w-4 text-amber-400" aria-hidden="true" />
+                <span>{m.commun.publier}</span>
               </span>
             </Link>
           ) : (
@@ -590,6 +673,7 @@ export function VerticalFeed({
           const aPrie = prie.has(v.id);
           const suit = suivis.has(v.author_id);
           const estMoi = me?.id === v.author_id;
+          const estAudio = isAudioStoragePath(v.storage_path);
 
           return (
             <section
@@ -597,21 +681,79 @@ export function VerticalFeed({
               data-index={i}
               className="relative flex h-[100dvh] w-full snap-start snap-always items-center justify-center overflow-hidden bg-slate-950"
             >
-              <video
-                ref={(el) => {
-                  videoRefs.current[i] = el;
-                }}
-                src={proche ? base + v.storage_path : undefined}
-                poster={v.thumb_path ? base + v.thumb_path : undefined}
-                loop
-                playsInline
-                preload={proche ? "metadata" : "none"}
-                className="h-full w-full object-cover sm:object-contain"
-                onClick={() => tapVideo(v, i)}
-                onError={() => {
-                  if (proche) setCassees((prev) => new Set(prev).add(v.id));
-                }}
-              />
+              {estAudio ? (
+                <div
+                  className={`relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-b ${typeBadge.bg}`}
+                  onClick={() => tapVideo(v, i)}
+                >
+                  {v.thumb_url && (
+                    // eslint-disable-next-line @next/next/no-img-element -- URL signée éphémère.
+                    <img
+                      src={v.thumb_url}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover opacity-25 blur-sm"
+                    />
+                  )}
+                  <div className="relative z-10 flex w-full max-w-xl flex-col items-center gap-7 px-8 pb-44 text-center">
+                    <span className="flex h-32 w-32 items-center justify-center rounded-full border border-white/30 bg-black/20 shadow-[0_0_80px_rgba(255,255,255,0.22)] backdrop-blur-xl">
+                      <Music2 className="h-16 w-16 text-white" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/70">
+                        Audio
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-white">
+                        {m.video.sonOriginal(pseudo(v.username ?? m.commun.disciple))}
+                      </p>
+                    </div>
+                    <audio
+                      ref={(el) => {
+                        mediaRefs.current[i] = el;
+                      }}
+                      src={proche ? (v.media_url ?? undefined) : undefined}
+                      loop
+                      controls
+                      preload={proche ? "metadata" : "none"}
+                      aria-label={m.video.sonOriginal(
+                        pseudo(v.username ?? m.commun.disciple),
+                      )}
+                      className="w-full"
+                      onClick={(event) => event.stopPropagation()}
+                      onError={() => {
+                        if (proche) setCassees((prev) => new Set(prev).add(v.id));
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <video
+                  ref={(el) => {
+                    mediaRefs.current[i] = el;
+                  }}
+                  src={proche ? (v.media_url ?? undefined) : undefined}
+                  poster={v.thumb_url ?? undefined}
+                  loop
+                  playsInline
+                  preload={proche ? "metadata" : "none"}
+                  className="h-full w-full object-cover sm:object-contain"
+                  onClick={() => tapVideo(v, i)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      tapVideo(v, i);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={i === active ? 0 : -1}
+                  aria-label={
+                    paused && i === active ? m.video.reprendre : m.video.mettreEnPause
+                  }
+                  aria-pressed={paused && i === active}
+                  onError={() => {
+                    if (proche) setCassees((prev) => new Set(prev).add(v.id));
+                  }}
+                />
+              )}
 
               {/* Voile dégradé bas uniquement : la vidéo respire en haut */}
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -685,13 +827,13 @@ export function VerticalFeed({
 
               {/* Rail d'actions droit */}
               <div
-                className={`rail-verre absolute bottom-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] end-3 z-20 flex w-[74px] flex-col items-center gap-5 rounded-[40px] py-4 ${
+                className={`rail-verre absolute bottom-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] end-3 z-20 flex w-[62px] flex-col items-center gap-2.5 rounded-[32px] py-2 md:w-[74px] md:gap-5 md:rounded-[40px] md:py-4 ${
                   i === active ? "animate-arrive" : ""
                 }`}
               >
                 {/* Avatar + Suivre */}
-                <div className="relative mb-1">
-                  <div className="h-[54px] w-[54px] rounded-full bg-gradient-to-tr from-teal-400 to-cyan-200 p-[2px] shadow-[0_0_18px_rgba(45,212,191,0.55)]">
+                <div className="relative mb-4 md:mb-5">
+                  <div className="h-[46px] w-[46px] rounded-full bg-gradient-to-tr from-teal-400 to-cyan-200 p-[2px] shadow-[0_0_18px_rgba(45,212,191,0.55)] md:h-[54px] md:w-[54px]">
                     <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-900 text-base font-bold text-amber-300">
                       {(v.username || "S")[0].toUpperCase()}
                     </span>
@@ -704,58 +846,68 @@ export function VerticalFeed({
                           ? m.video.nePlusSuivre(pseudo(v.username ?? m.commun.disciple))
                           : m.video.suivre(pseudo(v.username ?? m.commun.disciple))
                       }
-                      className={`absolute -bottom-2 left-1/2 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full text-white shadow-md transition hover:scale-110 ${
-                        suit ? "bg-emerald-500" : "bg-rose-500"
-                      }`}
+                      className="absolute -bottom-6 left-1/2 flex h-[44px] w-[44px] -translate-x-1/2 items-center justify-center rounded-full transition hover:scale-110"
                     >
-                      {suit ? (
-                        <Check className="h-3.5 w-3.5 stroke-[3]" />
-                      ) : (
-                        <Plus className="h-3.5 w-3.5 stroke-[3]" />
-                      )}
+                      <span
+                        className={`flex h-6 w-6 items-center justify-center rounded-full text-white shadow-md ${
+                          suit ? "bg-emerald-500" : "bg-rose-500"
+                        }`}
+                      >
+                        {suit ? (
+                          <Check className="h-3.5 w-3.5 stroke-[3]" />
+                        ) : (
+                          <Plus className="h-3.5 w-3.5 stroke-[3]" />
+                        )}
+                      </span>
                     </button>
                   )}
                 </div>
 
                 {/* Amen (cœur) */}
-                <button
-                  onClick={() => amen(v)}
-                  aria-label={m.video.direAmen}
-                  className="group flex flex-col items-center"
-                >
-                  <span className="tap-bounce flex items-center justify-center transition-all duration-300">
-                    <Heart
-                      className={`h-10 w-10 transition-transform ${
-                        aAmen
-                          ? "scale-110 fill-rose-500 text-rose-500 drop-shadow-[0_0_14px_rgba(244,63,94,0.85)]"
-                          : "fill-rose-400/90 text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.55)]"
-                      }`}
-                    />
-                  </span>
-                  <span className="mt-1 text-[15px] font-bold drop-shadow">
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => amen(v)}
+                    aria-label={m.video.direAmen}
+                    className="group flex min-h-11 min-w-11 items-center justify-center"
+                  >
+                    <span className="tap-bounce flex items-center justify-center transition-all duration-300">
+                      <Heart
+                        className={`h-8 w-8 transition-transform md:h-10 md:w-10 ${
+                          aAmen
+                            ? "scale-110 fill-rose-500 text-rose-500 drop-shadow-[0_0_14px_rgba(244,63,94,0.85)]"
+                            : "fill-rose-400/90 text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.55)]"
+                        }`}
+                      />
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => ouvrirAmenateurs(v)}
+                    aria-label={m.video.quiAditAmen}
+                    className="min-h-7 min-w-11 text-[13px] font-bold text-white underline-offset-2 hover:underline md:text-[15px]"
+                  >
                     {formatCompte(nbAmen(v))}
-                  </span>
-                </button>
+                  </button>
+                </div>
 
                 {/* Je prie pour toi (halo doré) */}
                 <button
                   onClick={() => prier(v)}
                   aria-label={m.video.priePourToi}
-                  className="group relative flex flex-col items-center"
+                  className="group relative flex min-h-12 min-w-12 flex-col items-center"
                 >
                   {halo === v.id && (
                     <span className="prayer-halo absolute -inset-2 rounded-full bg-amber-400/40 blur-md" />
                   )}
                   <span
-                    className={`tap-bounce relative flex h-16 w-16 items-center justify-center rounded-full transition-all duration-300 ${
+                    className={`tap-bounce relative flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 md:h-16 md:w-16 ${
                       aPrie
                         ? "scale-105 border border-amber-400 bg-amber-500/35 shadow-[0_0_28px_8px_rgba(245,158,11,0.45)]"
                         : ""
                     }`}
                   >
-                    <span className="text-[34px] leading-none drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]">🙏</span>
+                    <span className="text-[28px] leading-none drop-shadow-[0_0_12px_rgba(245,158,11,0.6)] md:text-[34px]">🙏</span>
                   </span>
-                  <span className="mt-1 text-[15px] font-bold text-amber-300 drop-shadow">
+                  <span className="mt-0.5 text-[13px] font-bold text-amber-300 drop-shadow md:mt-1 md:text-[15px]">
                     {formatCompte(nbPrieres(v))}
                   </span>
                 </button>
@@ -764,12 +916,12 @@ export function VerticalFeed({
                 <button
                   onClick={() => ouvrirCommentaires(v)}
                   aria-label={m.video.voirCommentaires}
-                  className="group flex flex-col items-center"
+                  className="group flex min-h-11 min-w-11 flex-col items-center justify-center"
                 >
                   <span className="tap-bounce flex items-center justify-center text-white transition">
-                    <MessageCircle className="h-9 w-9" />
+                    <MessageCircle className="h-7 w-7 md:h-9 md:w-9" />
                   </span>
-                  <span className="mt-1 text-[15px] font-bold drop-shadow">
+                  <span className="mt-0 text-[13px] font-bold drop-shadow md:mt-1 md:text-[15px]">
                     {formatCompte(nbCommentaires(v))}
                   </span>
                 </button>
@@ -778,12 +930,12 @@ export function VerticalFeed({
                 <button
                   onClick={() => partager(v)}
                   aria-label={m.video.partager}
-                  className="group flex flex-col items-center"
+                  className="group flex min-h-11 min-w-11 flex-col items-center justify-center"
                 >
                   <span className="tap-bounce flex items-center justify-center text-white transition">
-                    <Share2 className="h-9 w-9" />
+                    <Share2 className="h-7 w-7 md:h-9 md:w-9" />
                   </span>
-                  <span className="mt-1 text-[11px] font-medium text-white/70 drop-shadow">
+                  <span className="mt-0 max-w-[56px] truncate text-[9px] font-medium text-white/70 drop-shadow md:mt-1 md:max-w-none md:text-[11px]">
                     {partage === v.id ? m.video.copie : m.video.partager}
                   </span>
                 </button>
@@ -792,7 +944,7 @@ export function VerticalFeed({
                 <button
                   onClick={() => signaler(v)}
                   aria-label={m.video.signaler}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white/80"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white/80 md:h-8 md:w-8"
                 >
                   <Flag className={`h-4 w-4 ${signalee.has(v.id) ? "fill-white/40" : ""}`} />
                 </button>
@@ -832,6 +984,47 @@ export function VerticalFeed({
 
       {/* Nav basse : pilule seule (pas de chips sur le feed plein écran) */}
       <FloatingPillNav chips={false} />
+
+      {amenOuverte && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-md"
+          onClick={() => setAmenOuverte(null)}
+        >
+          <div
+            className="animate-sheet-up relative flex max-h-[60vh] w-full flex-col rounded-t-3xl border-t border-white/20 bg-slate-900/90 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 shadow-2xl backdrop-blur-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative flex items-center justify-center border-b border-white/10 pb-3">
+              <span className="text-[17px] font-bold text-white">{m.video.quiAditAmen}</span>
+              <button
+                onClick={() => setAmenOuverte(null)}
+                aria-label={m.video.fermerAmens}
+                className="absolute end-0 rounded-full bg-white/10 p-1.5 text-white/70 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="no-scrollbar flex-1 overflow-y-auto py-4">
+              {chargeAmenateurs ? (
+                <p className="py-6 text-center text-sm text-white/50">{m.commun.chargement}</p>
+              ) : amenateurs.length === 0 ? (
+                <p className="py-6 text-center text-sm text-white/50">{m.video.aucunAmen}</p>
+              ) : (
+                <div className="space-y-3">
+                  {amenateurs.map((a) => (
+                    <div key={a.id} className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full border border-rose-400/30 bg-rose-500/20 text-xs font-bold text-rose-200">
+                        {a.username[0]?.toUpperCase() ?? "S"}
+                      </span>
+                      <bdi className="text-sm font-semibold text-white/90">@{a.username}</bdi>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Panneau commentaires (glass sheet) */}
       {ouverte && (

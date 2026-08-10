@@ -1,6 +1,6 @@
-/** Mode Sabbat : 24h de déconnexion volontaire. Logique pure, testée. */
+/** Mode Sabbat : 12 h de déconnexion volontaire. Logique pure, testée. */
 
-export const SABBATH_HOURS = 24;
+export const SABBATH_HOURS = 12;
 
 export function sabbathEnd(from: Date = new Date()): Date {
   return new Date(from.getTime() + SABBATH_HOURS * 3600 * 1000);

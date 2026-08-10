@@ -51,9 +51,11 @@ Deux voix en alternance, comme les scénarios français : Sarah
 masculine). Modèle **`eleven_v3`** — le seul à couvrir les onze écritures
 (`eleven_multilingual_v2` n'a pas l'hébreu).
 
-La clé API est lue dans l'environnement du serveur `elevenlabs-mcp` déjà
-lancé : le connecteur est authentifié, rien à ressaisir. Elle n'est ni
-écrite sur disque ni affichée.
+La clé API est fournie explicitement au processus de synthèse via
+`ELEVENLABS_API_KEY`. Elle n'est jamais recherchée dans les processus déjà
+lancés, écrite sur disque ni affichée. Le mot de passe des scripts de
+publication est demandé de façon interactive : il ne doit jamais figurer
+dans une option de commande.
 
 ## Coût
 

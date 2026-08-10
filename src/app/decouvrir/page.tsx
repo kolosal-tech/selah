@@ -13,7 +13,10 @@ export default async function Decouvrir() {
     { icon: Moon, titre: m.decouvrir.pilierSabbatTitre, texte: m.decouvrir.pilierSabbatTexte },
   ];
   return (
-    <main className="relative min-h-screen w-full flex flex-col items-center justify-center px-6 py-16 text-center overflow-hidden bg-slate-950">
+    <main
+      data-load-marker="selah-public-discover-v1"
+      className="relative min-h-screen w-full flex flex-col items-center justify-center px-6 py-16 text-center overflow-hidden bg-slate-950"
+    >
       {/* Vidéo d'ambiance en boucle (9:16 mobile, 16:9 desktop) sous voile sombre */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/60 to-slate-950/90 z-10" />

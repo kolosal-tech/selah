@@ -4,6 +4,8 @@ import { signup } from "@/app/actions";
 import { Sparkles } from "lucide-react";
 import { getMessages } from "@/i18n/server";
 import { SelecteurLangue } from "@/app/selecteur-langue";
+import { PasswordField } from "@/app/auth/password-field";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth-password";
 import { ChampPays } from "./champ-pays";
 
 export default async function Signup({
@@ -20,7 +22,7 @@ export default async function Signup({
     nom: m.auth.erreurUsername,
   };
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6 py-12">
+    <main className="mx-auto flex min-h-[100dvh] w-full max-w-sm flex-col justify-start gap-6 overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] scroll-py-4 sm:justify-center sm:py-6">
       <div>
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
@@ -60,16 +62,16 @@ export default async function Signup({
           name="email"
           type="email"
           required
+          autoComplete="email"
           placeholder={m.auth.email}
           className="glass-input rounded-xl p-3 placeholder:text-white/40"
         />
-        <input
+        <PasswordField
           name="password"
-          type="password"
-          required
-          minLength={8}
+          label={m.auth.motDePasseMin}
           placeholder={m.auth.motDePasseMin}
-          className="glass-input rounded-xl p-3 placeholder:text-white/40"
+          autoComplete="new-password"
+          minLength={MIN_PASSWORD_LENGTH}
         />
         <ChampPays paysDetecte={paysDetecte} />
         <label className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-white/80">
@@ -79,7 +81,7 @@ export default async function Signup({
             {m.auth.charteTexte}
           </span>
         </label>
-        <button className="btn-paradise rounded-xl p-3 font-bold transition hover:scale-[1.02]">
+        <button className="btn-paradise min-h-11 rounded-xl p-3 font-bold transition hover:scale-[1.02]">
           {m.auth.creerCompte}
         </button>
       </form>

@@ -1,0 +1,57 @@
+{
+  "_comment": "Seuils proposés le 2026-08-11. Mettre thresholdsApproved à true uniquement après validation humaine explicite.",
+  "thresholdsApproved": false,
+  "baseUrl": "http://127.0.0.1:3100",
+  "pages": [
+    {
+      "tag": "login",
+      "path": "/login",
+      "marker": "selah-public-login-v1",
+      "role": "entry"
+    },
+    {
+      "tag": "discover",
+      "path": "/decouvrir",
+      "marker": "selah-public-discover-v1",
+      "role": "traffic"
+    },
+    {
+      "tag": "feed-authenticated",
+      "path": "/",
+      "marker": "selah-authenticated-feed-v1",
+      "role": "traffic",
+      "requiresAuth": true
+    },
+    {
+      "tag": "manifest",
+      "path": "/manifest.json",
+      "marker": "\"short_name\": \"Selah\"",
+      "role": "witness"
+    }
+  ],
+  "thresholds": {
+    "http_req_duration{scenario:traffic}": ["p(95)<1500"],
+    "http_req_failed{scenario:traffic}": ["rate<0.01"],
+    "checks{scenario:traffic}": ["rate>0.99"],
+    "http_req_duration{page:manifest}": ["p(95)<800"]
+  },
+  "load": {
+    "vus": 100,
+    "rampUpSeconds": 30,
+    "steadySeconds": 120,
+    "rampDownSeconds": 15
+  },
+  "stress": {
+    "maxVus": 150,
+    "steps": [25, 50, 100, 150],
+    "stepSeconds": 45
+  },
+  "spike": {
+    "vus": 100,
+    "durationSeconds": 60
+  },
+  "sentry": {},
+  "healthProbe": {
+    "path": ""
+  }
+}

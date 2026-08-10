@@ -1,0 +1,4 @@
+# Une sortie de stress peut depasser 150 Mo. Jamais versionnee.
+runs/
+reports/
+config.local.json

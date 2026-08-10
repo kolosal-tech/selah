@@ -1,0 +1,275 @@
+# État de l’objectif Selah
+
+## Objectif
+
+Finaliser Selah, livrer les changements en production et prouver par des tests
+fonctionnels, visuels, sécuritaires et de charge que les parcours demandés sont
+stables jusqu'à au moins 100 utilisateurs virtuels simultanés.
+
+## Critères de succès
+
+1. Le code, les migrations et la CI sont commités/poussés sans secret et toutes
+   les validations locales et GitHub sont vertes.
+2. La migration Supabase est appliquée et vérifiée en production par des tests
+   RLS positifs/négatifs et les advisors disponibles.
+3. Un déploiement Vercel `READY` sert les parcours média, auth, profil, prière
+   et rooms, vérifiés sur l'URL de production.
+4. Playwright passe sur mobile et desktop, sans erreur console inattendue, avec
+   contrôle visuel, accessibilité et interactions principales.
+5. Les scénarios k6 smoke, load et stress atteignent au moins 100 VU, contrôlent
+   le contenu et respectent des seuils validés par l'utilisateur, corrélés aux
+   erreurs serveur sur la fenêtre du tir.
+6. Les améliorations UX retenues après comparaison des patterns publics de
+   TikTok, YouTube Shorts et Facebook Reels sont implémentées et re-testées.
+7. Les données QA sont identifiables et nettoyables ; aucune donnée personnelle,
+   aucun secret et aucune dépense directe ne sont introduits.
+
+## Contraintes
+
+- Le déploiement, les migrations et le test de charge de production sont
+  explicitement autorisés par la demande du 11 août 2026.
+- Aucun secret lu, affiché ou ajouté.
+- Les modifications de configuration exigent une sauvegarde horodatée.
+- Le test de charge distant reste interactif et ses seuils doivent être validés
+  par l'utilisateur avant le tir.
+- Pas de paiement, d'achat ni de nouveau fournisseur payant sans autorisation.
+
+## Cycle courant
+
+Cycle 17 — production, QA exhaustive et charge : en cours le 11 août 2026
+(budget maximal : 5 cycles). Cycle 1/5 : audit réel, harnais Playwright/k6,
+comparatif UX, préparation de release et critères de production. Les migrations
+`0018`, `20260810221136_media_profile_room_audio.sql` et
+`20260810231500_security_performance_advisors.sql` sont appliquées à distance ;
+les contrôles ont prouvé les policies de suppression propriétaire table/Storage,
+zéro alerte Security Advisor et zéro avertissement Performance Advisor. Supabase
+Auth impose huit caractères et la protection contre les mots de passe compromis.
+Vercel possède les trois noms de variables de production requis et Supabase
+autorise l’origine canonique via `https://selah-wheat.vercel.app/**`.
+
+Le socle local repasse lint, TypeScript, 19 fichiers/137 tests Vitest, RLS,
+reconstruction du schéma et build de 24 routes. Playwright couvre desktop et
+Pixel 7 avec caméra/micro simulés ; la publication vidéo/audio crée, vérifie et
+supprime la ligne ainsi que l’objet Storage. Le harnais capture maintenant les
+erreurs console, JavaScript, réseau et HTTP 5xx. Restent dans ce cycle : commit,
+push, CI, déploiement reproductible, QA HTTPS, demande de reset réelle et tirs
+k6 distants. Les échecs doivent entraîner un correctif puis un nouveau cycle,
+jamais une répétition identique. Seuils k6 proposés en attente de validation :
+p95 parcours < 1 500 ms, échecs < 1 %, page témoin p95 < 800 ms.
+
+Cycle 16 — reprise fonctionnelle et relais Claude Code : terminé localement le 11 août
+2026 (budget maximal : 5 cycles). Objectif : livrer localement les parcours
+demandés sans déploiement de production. Critères binaires :
+
+1. le dépôt média conserve la reprise idempotente par `upsert`, avec le droit
+   Storage propriétaire requis, et offre capture mobile plus audio seul ;
+2. la connexion affiche/masque le mot de passe et propose explicitement une
+   réinitialisation après un refus d'identifiants, sans exposer l'erreur brute ;
+3. les Upper Rooms disposent d'un audio WebRTC volontaire, micro coupé par
+   défaut, avec « couper tous les micros » réservé à l'hôte ou à un admin ;
+4. le recadrage photo reste validé et des paramètres utilisateur ont un effet
+   réel dans l'application ;
+5. `AGENTS.md` et un relais Claude Code à la racine réelle expliquent commandes,
+   état Git, migrations restantes, validation et limites ;
+6. lint, TypeScript, Vitest, build et vérifications SQL applicables sont verts.
+
+Contraintes du cycle : préserver toutes les modifications locales préexistantes,
+ne lire ni publier aucun secret, ne pas muter Supabase/Vercel/production, et
+documenter tout contrôle live qui nécessitera encore un fournisseur SFU pour
+une modération audio autoritaire à grande échelle.
+
+Verdict du cycle 16 : les six critères sont prouvés localement. La policy
+Storage propriétaire autorise la reprise `upsert` sans exposer l'objet orphelin
+à un autre membre ; les MIME audio et le chemin d'avatar sont contrôlés. Le
+studio accepte vidéo native, caméra+micro, audio seul et lots ; le fil rend les
+audios. La connexion possède l'œil et un reset contextuel. Les rooms ont une
+entrée volontaire, quatre pairs maximum, micro désactivé par défaut et RPC de
+mute-all réservée. Le profil recadre et applique son, ambiance et réduction des
+animations sur toutes les pages. `AGENTS.md`, `CLAUDE.md` et
+`HANDOFF_CLAUDE.md` encadrent la reprise.
+
+Preuves finales : `next typegen` réussi ; `pnpm lint` et
+`pnpm exec tsc --noEmit --incremental false` sortent avec le code 0 ;
+`pnpm test` passe 17 fichiers et 117 tests ; `pnpm test:rls` affiche
+`RLS baseline: OK` ; `pnpm test:schema` affiche `Schema reconstruction: OK` ;
+`NEXT_TELEMETRY_DISABLED=1 pnpm build` compile 24 pages avec le code 0 ;
+`git diff --check` ne produit aucune sortie. Le navigateur mobile local prouve
+la bascule password/text, le CTA d'erreur et la page forgot-password.
+
+Limites restantes : aucun test matériel caméra/micro ni appel audio réel à deux
+appareils ; aucun TURN/SFU ; livraison SMTP de reset non exercée. La migration
+`20260810221136_media_profile_room_audio.sql` n'est pas appliquée à distance,
+le code n'est ni committé ni poussé et ce cycle n'a rien déployé. La contrainte
+avatar est `NOT VALID` pour ne pas bloquer d'anciens chemins : les auditer puis
+la valider dans une migration suivante. Le workflow CI reste local/non suivi
+tant qu'il n'est pas committé et poussé.
+
+Cycle 1 — baseline et Lot 0 : terminé.
+
+Cycle 2 — verrouillage P0/P1 autonome : terminé et validé localement.
+
+Cycle 3 — garde-fous par défaut sécurisé : terminé et validé localement.
+
+Cycle 4 — déploiement autorisé : terminé le 10 août 2026. Les migrations
+`0009` à `0015` sont appliquées au projet Supabase `ilqzmpcmahxxnbdrugyt` et
+l'artefact Vercel `dpl_GSePW8re6RKCDXG5zAVpuv8f62eS` est `READY` sur l'alias
+`selah-wheat.vercel.app`.
+
+Cycle 5 — réactivation contrôlée : terminé le 10 août 2026. La migration
+`0016_reenable_video_mentorship.sql` est appliquée et l'artefact
+`dpl_7tyEEM6Hb3EBM8hkcsDSP7SSig32` est `READY` en production.
+
+Cycle 6 — Mode Sabbat ciblé : terminé le 10 août 2026. La durée générale est
+passée de 24 h à 12 h (`SABBATH_HOURS = 12`) et les libellés multilingues ont
+été alignés. L'action serveur `endSabbath` ne met à jour que `user.id` de la
+session courante. Safari a prouvé la session `@qa_timothee`, puis a affiché le
+fil après désactivation. La vérification distante retourne `unlocked: true`
+pour ce compte et `other_active_accounts: 0` pour les autres comptes. Le
+déploiement `dpl_5NAMK1CDEU2TRjSZXDjJGASWFryG` est `READY` sur
+`selah-wheat.vercel.app`.
+
+Cycle 7 — compaction mobile du rail vidéo : terminé le 10 août 2026. Les
+actions Amen, prière, commentaires, partage et signalement gardent leurs
+fonctions et `aria-label`, avec des cibles tactiles >= 44 px et un rail plus
+compacte sous le breakpoint `md`; les dimensions desktop sont conservées.
+L'artefact `dpl_7nAhEYYfpxxqcMJnU4dArfjqzfqi` est `READY` en production.
+
+Cycle 8 — navigation vidéo par défaut : terminé le 10 août 2026. La pilule
+mobile place `/` (Vidéos) en premier via `order-first`, tandis que `/feed`
+reste premier sur desktop via `md:order-first`. Les autres onglets restent
+présents et `POST_AUTH_REDIRECT = "/"` couvre connexion et inscription.
+L'artefact `dpl_4UCSy8ZGRkwRLE7vv8TnTVhDRcC1` est `READY` en production.
+
+Cycle 9 — contrôle sonore du fil vidéo : terminé le 10 août 2026. Le bouton
+reste muet par défaut, est séparé visuellement de « Témoigner », affiche une
+icône rouge barrée quand le son est coupé et revient blanc lorsque le son est
+activé et la lecture n'est pas en pause. Il conserve les libellés accessibles
+et une cible mobile de 44 px.
+
+Cycle 10 — navigation horizontale desktop : terminé le 10 août 2026. Les chips secondaires
+disposent de flèches précédent/suivant visibles à partir de `md`, désactivées
+aux limites et pilotables au clavier/souris; le défilement tactile mobile reste
+disponible. Le déploiement combiné `dpl_G3RR7aM9btwbFXTd83KzfXLEPZGX` est
+`READY` en production.
+
+Cycle 11 — couleurs sémantiques des raccourcis : terminé le 10 août 2026. Les
+icônes de la barre secondaire reçoivent une palette sobre par espace
+(Intercession violet, mentorat bleu, églises vert, pasteur indigo, modération
+rose, Sabbat ardoise), sans modifier les libellés, les contrôles de défilement
+ou l'état actif. Le déploiement `dpl_4Dx91sJf6uN8nVdAN9S5WiBhajvr` est
+`READY` en production.
+
+Cycle 12 — commentaires, Amen et profil : terminé le 10 août 2026. Le rendu
+des commentaires vidéo charge désormais `author_id` puis les usernames publics
+via RLS, et le compteur Amen ouvre une liste de profils publics pour les
+membres connectés. `0017_profile_avatars.sql` ajoute un bucket privé `avatars`
+(5 Mo, JPG/PNG/WebP), un champ `avatar_path`, l'action bornée au propriétaire
+et un accès Profil/Paramètres visible dans l'en-tête. Le déploiement
+`dpl_6RsNaMZwg68tnotBk8fYcy8GbXaY` est `READY` en production.
+
+Cycle 13 — régression du Fil et publication contrôlée : terminé le 10 août
+2026. `/feed` charge maintenant explicitement les commentaires du post et les
+profils publics des auteurs via RLS ; le commentaire de @sara est visible après
+actualisation avec son auteur et son texte. Le compteur Amen est une liste
+`details` séparée du bouton de réaction : l'ouverture affiche @qa_timothee sans
+modifier le compteur. `createPost` redirige vers `/feed?posted=1` (ou une erreur
+explicite), ce qui vide le formulaire. Le rappel demandé est déjà présent une
+seule fois en production ; il n'a pas été republié pour éviter un doublon. Le
+déploiement `dpl_CsP2Nbiw7d5oSyAFGhKwDS8YiPtv` est `READY`, alias
+`selah-wheat.vercel.app`, et le parcours Chrome authentifié a été vérifié.
+
+Cycle 14 — authentification, médias et UX mobile : terminé localement le 10 août
+2026, sans déploiement ni mutation de compte personnel. Les champs mot de passe
+ont un contrôle afficher/masquer accessible ; le parcours réel
+`resetPasswordForEmail` → callback PKCE → `updateUser` distingue l'acceptation
+Supabase de la livraison SMTP. Les photos de profil se recadrent avant upload,
+peuvent être repositionnées à nouveau et leur suppression est confirmée,
+bornée au propriétaire et rollbackée si Storage refuse. Le lien Profil est
+visible/tactile sur mobile et la page expose langue et email du compte courant.
+La navigation mobile vers Vidéos force le push `/` depuis les pages internes ;
+Prière conserve une cible tactile >= 44 px et ses cartes mobiles utilisent
+`content-visibility` avec un flou allégé. Le Fil charge commentaires/Amen et
+leurs profils en vagues parallèles ; l'ouverture des commentaires vidéo est
+instrumentée en développement. La capture vidéo demande caméra+micro,
+attache l'aperçu après rendu, utilise un codec WebM/Opus quand disponible,
+affiche l'état audio et le chronomètre écoulé, et annule sans publier.
+Validations locales : lint, TypeScript, 12 fichiers Vitest / 80 tests et build
+Next verts. Les scripts PostgreSQL schema/RLS restent non exécutés car le daemon
+Docker n'était pas démarré. Aucun timing navigateur détaillé ni écoute du Blob
+audio n'est présenté comme preuve ; la piste audio est contrôlée sur le flux
+source et le codec choisi.
+
+Cycle 15 — formulaires d'authentification adaptés au clavier mobile : terminé
+localement le 10 août 2026. `/login` et `/signup` utilisent désormais la
+hauteur dynamique `100dvh`, un alignement en haut sur mobile, un défilement
+interne avec safe areas et un centrage conservé à partir de `sm`. Les liens et
+boutons gardent des cibles tactiles >= 44 px et les labels HTML existants.
+Le smoke HTTP local retourne `200` pour les deux pages sans saisir ni soumettre
+de donnée personnelle. Le build, lint, TypeScript et la suite Vitest (13
+fichiers, 82 tests) sont verts ; aucune sonde clavier de navigateur réelle
+n'était disponible dans cet environnement.
+
+Vérification audio Prière/Direct : ces espaces implémentent uniquement le mur
+de prière, la présence Realtime et les messages texte. Aucun `getUserMedia`,
+WebRTC, piste audio ou contrôle micro/haut-parleur n'est présent ; ils ne
+permettent donc pas actuellement une prière vocale de groupe. Le libellé
+« Direct » peut suggérer à tort une voix en direct ; toute implémentation future
+doit d'abord cadrer consentement, permissions navigateur, modération et
+verrouillage micro par l'animateur.
+
+## Leçons cumulées
+
+- Le dépôt applicatif est /Users/mskolosalgmail.com/Developer/TIKTOK_CRETIEN/selah.
+- Le routage Maestro par map a été refusé par le garde-fou ; ne pas contourner
+  ce refus, exécuter localement avec vérifications mécaniques.
+- Le build actuel dépend de polices Google et doit devenir hermétique.
+- Le build est désormais vert avec le réseau refusé, après retrait des polices
+  Google distantes.
+- Les migrations `0009` à `0015` sont appliquées à Supabase ; les policies
+  d'écriture sensibles sont vérifiées absentes à distance.
+- Les migrations 0009 à 0015 sont exercées dans PostgreSQL local
+  jetable par `pnpm test:rls`, y compris les refus RLS et les contraintes
+  métier.
+- La limite d'usage des actions authentifiées, dont la traduction, est
+  désormais atomique et partagée en base ; l'authentification et le transfert
+  direct d'objets Storage exigent toujours une protection d'entrée/pipeline
+  dédiée avant ouverture.
+- La pagination du feed est passée à un curseur composé, mais le modèle de
+  recommandation et ses candidats restent un choix produit à cadrer.
+- Les uploads vidéo conservent un identifiant par essai, reprennent au même
+  chemin et nettoient les objets après un refus de publication certain.
+- Les vues de réconciliation Storage sont restreintes aux modérateurs ; toute
+  purge reste manuelle, planifiée et journalisée.
+- Les créations et changements de statut de signalement, ainsi que le masquage
+  de vidéo, sont journalisés ; la procédure de sanctions et d'appels reste à
+  décider.
+- Les scripts médias ne lisent plus de secrets dans les processus et ne prennent
+  plus de mot de passe en argument ; l'ouverture du pipeline média reste hors
+  périmètre.
+- La validation du 10 août 2026 active localement la suspension des nouvelles
+  offres et relations de mentorat ainsi que des dépôts/publications vidéo ; les
+  données existantes sont conservées ; la réactivation contrôlée de la vidéo et
+  du mentorat est maintenant active sous RLS, quotas et modération.
+- Le flux de connexion Supabase a été complété dans le Terminal macOS ; le
+  projet cible est identifié par `ilqzmpcmahxxnbdrugyt`. L'historique distant
+  contenait déjà dix versions horodatées ; les migrations locales `0009`–`0015`
+  ont donc été exécutées directement puis enregistrées comme appliquées, sans
+  rejouer les migrations historiques.
+- Le déploiement production Vercel est vérifié par inspection (`target:
+  production`, `status: Ready`) et par HTTP (`/` redirige vers `/login`).
+- Une exclusion temporaire des `.env` a provoqué un `500` distant faute d'URL/
+  clé Supabase ; les logs Vercel l'ont prouvé et l'exclusion a été retirée. Le
+  déploiement final est revenu à `200` sur `/login` et `307` sur `/`.
+- La réactivation a restauré uniquement les écrans et policies nécessaires ;
+  les URLs signées, la limite `video_publish`, les contrôles de chemin, la
+  journalisation de modération et les colonnes vidéo système restent actifs.
+- Le Mode Sabbat est désormais configurable par code à 12 h ; l'exemption
+  courante passe par une action authentifiée bornée à `user.id`, sans mutation
+  administrative d'un autre profil.
+
+## Décisions externes avant extension fonctionnelle
+
+- Les choix relatifs aux mineurs, au mentorat, aux paiements/dons, aux territoires,
+  aux fournisseurs et au pipeline média restent soumis à validation utilisateur
+  avant extension fonctionnelle ou changement de politique ; voir
+  docs/PREPUBLICATION_GATES.md.

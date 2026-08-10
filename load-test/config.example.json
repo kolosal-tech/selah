@@ -1,0 +1,69 @@
+{
+  "_comment": "Copier en config.json et adapter. Parcours, marqueurs de contenu et seuils ne sont pas devinables : ils se valident avec un humain avant le premier tir.",
+
+  "baseUrl": "http://localhost:3000",
+
+  "pages": [
+    {
+      "tag": "home",
+      "path": "/",
+      "marker": "REMPLACER-texte-present-uniquement-en-cas-de-succes",
+      "role": "entry"
+    },
+    {
+      "tag": "content",
+      "path": "/REMPLACER",
+      "marker": "REMPLACER",
+      "role": "traffic"
+    },
+    {
+      "tag": "authenticated-content",
+      "path": "/REMPLACER",
+      "marker": "REMPLACER",
+      "role": "traffic",
+      "requiresAuth": true
+    },
+    {
+      "tag": "docs",
+      "path": "/REMPLACER-page-sans-base-de-donnees",
+      "marker": "REMPLACER",
+      "role": "witness"
+    }
+  ],
+
+  "thresholds": {
+    "http_req_duration{scenario:traffic}": ["p(95)<1500"],
+    "http_req_failed{scenario:traffic}": ["rate<0.01"],
+    "checks{scenario:traffic}": ["rate>0.99"],
+    "http_req_duration{page:docs}": ["p(95)<800"]
+  },
+
+  "load": {
+    "vus": 20,
+    "rampUpSeconds": 30,
+    "steadySeconds": 120,
+    "rampDownSeconds": 15
+  },
+
+  "stress": {
+    "maxVus": 200,
+    "steps": [10, 25, 50, 100, 200],
+    "stepSeconds": 60
+  },
+
+  "spike": {
+    "vus": 200,
+    "durationSeconds": 60
+  },
+
+  "sentry": {
+    "org": "REMPLACER",
+    "project": "REMPLACER",
+    "environment": "production"
+  },
+
+  "healthProbe": {
+    "path": "/api/health/db",
+    "tokenEnv": "HEALTH_PROBE_TOKEN"
+  }
+}

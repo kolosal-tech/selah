@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { closePrayerRoom } from "@/app/actions";
 import { RoomLive, type Message } from "./room-live";
+import { RoomAudio } from "./room-audio";
 import { getMessages } from "@/i18n/server";
 
 export default async function Room({
@@ -29,7 +30,7 @@ export default async function Room({
       .eq("room_id", id)
       .order("created_at")
       .limit(200),
-    supabase.from("profiles").select("username").eq("id", user.id).single(),
+    supabase.from("profiles").select("username, role").eq("id", user.id).single(),
   ]);
 
   if (!room) notFound();
@@ -79,6 +80,17 @@ export default async function Room({
           {m.rooms.veilleeTerminee}
         </p>
       ) : null}
+
+      <RoomAudio
+        roomId={room.id}
+        userId={user.id}
+        closed={Boolean(room.closed_at)}
+        canModerate={
+          room.host_id === user.id ||
+          moi?.role === "admin" ||
+          moi?.role === "moderateur"
+        }
+      />
 
       <RoomLive
         roomId={room.id}

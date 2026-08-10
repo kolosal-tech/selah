@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Synthèse des 120 narrations (12 unités × 10 langues).
 
-La clé API est lue dans l'environnement du serveur MCP `elevenlabs-mcp`
-déjà lancé sur la machine : le connecteur est authentifié, inutile d'en
-redemander une à l'utilisateur. Elle n'est jamais écrite sur disque ni
+La clé API est fournie explicitement par l'environnement du processus. Elle
+n'est jamais recherchée dans les autres processus, écrite sur disque ni
 affichée.
 
 Idempotent : un fichier déjà produit n'est pas régénéré. Relancer après
@@ -13,7 +12,6 @@ import concurrent.futures as cf
 import json
 import os
 import pathlib
-import re
 import subprocess
 import sys
 import urllib.request
@@ -35,16 +33,11 @@ MODELE = "eleven_v3"  # seul modèle couvrant les onze écritures visées
 
 
 def cle() -> str:
-    """Clé lue dans l'environnement du processus elevenlabs-mcp."""
-    if os.environ.get("ELEVENLABS_API_KEY", "").startswith("sk_"):
-        return os.environ["ELEVENLABS_API_KEY"]
-    ps = subprocess.run(["ps", "axeww"], capture_output=True, text=True).stdout
-    for ligne in ps.splitlines():
-        if "elevenlabs-mcp" in ligne:
-            m = re.search(r"ELEVENLABS_API_KEY=(sk_\S+)", ligne)
-            if m:
-                return m.group(1)
-    sys.exit("Clé ElevenLabs introuvable : le connecteur MCP est-il actif ?")
+    """Retourne uniquement une clé explicitement fournie à ce processus."""
+    key = os.environ.get("ELEVENLABS_API_KEY", "")
+    if key.startswith("sk_"):
+        return key
+    sys.exit("ELEVENLABS_API_KEY est requise dans l'environnement du processus.")
 
 
 CLE = cle()

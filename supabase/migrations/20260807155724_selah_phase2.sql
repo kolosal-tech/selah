@@ -1,0 +1,2 @@
+-- Alias d'historique production de 0004_selah_phase2.sql.
+-- Aucun SQL : le schéma canonique est déjà reconstruit par 0004.

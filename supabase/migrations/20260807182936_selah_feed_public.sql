@@ -1,0 +1,2 @@
+-- Alias d'historique production de 0006_selah_feed_public.sql.
+-- Aucun SQL : le schéma canonique est déjà reconstruit par 0006.

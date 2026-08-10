@@ -45,9 +45,6 @@ export default async function PublierVideo() {
 
       <UploadForm userId={user!.id} />
 
-      {/* Publication en série : utile pour amorcer le fil, ou pour toute
-          campagne préparée hors ligne. Même chemin que le studio — dépôt
-          direct du navigateur vers Storage, puis `publishVideo`. */}
       <DepotLot userId={user!.id} />
 
       {(miennes ?? []).length > 0 && (

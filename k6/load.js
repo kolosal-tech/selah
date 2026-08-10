@@ -17,7 +17,7 @@ export const options = {
 
 const BASE = __ENV.BASE_URL || "http://localhost:3000";
 
-export default function () {
+export default function loadScenario() {
   check(http.get(`${BASE}/`), { "landing 200": (r) => r.status === 200 });
   check(http.get(`${BASE}/login`), { "login 200": (r) => r.status === 200 });
   sleep(Math.random() * 2);

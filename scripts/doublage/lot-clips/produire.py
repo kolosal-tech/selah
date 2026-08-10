@@ -17,7 +17,6 @@ latérale, mêmes réglages que le reste du fil.
 import json
 import os
 import pathlib
-import re
 import subprocess
 import sys
 import urllib.request
@@ -48,15 +47,10 @@ HAUT = "H*0.155"
 
 
 def cle_eleven() -> str:
-    if os.environ.get("ELEVENLABS_API_KEY", "").startswith("sk_"):
-        return os.environ["ELEVENLABS_API_KEY"]
-    ps = subprocess.run(["ps", "axeww"], capture_output=True, text=True).stdout
-    for ligne in ps.splitlines():
-        if "elevenlabs-mcp" in ligne:
-            m = re.search(r"ELEVENLABS_API_KEY=(sk_\S+)", ligne)
-            if m:
-                return m.group(1)
-    sys.exit("Clé ElevenLabs introuvable : le connecteur MCP est-il actif ?")
+    key = os.environ.get("ELEVENLABS_API_KEY", "")
+    if key.startswith("sk_"):
+        return key
+    sys.exit("ELEVENLABS_API_KEY est requise dans l'environnement du processus.")
 
 
 def duree(f: pathlib.Path) -> float:

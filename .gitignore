@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+/blob-report/
 
 # next.js
 /.next/
@@ -35,6 +38,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# État local généré par la CLI Supabase (project-ref, versions, cache)
+/supabase/.temp/
 
 # typescript
 *.tsbuildinfo

@@ -6,20 +6,40 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { publishVideo } from "@/app/actions";
 import { useMessages } from "@/i18n/client";
 import {
+  AUDIO_MIME_TYPES,
+  decrireFichierMedia,
+  extensionPourMime,
+  MAX_MEDIA_BYTES,
+  MAX_MEDIA_DURATION_SECONDS,
+  type MediaKind,
+} from "@/lib/media-files";
+import {
   Camera,
   Check,
   FolderOpen,
   Loader2,
+  Mic,
   RefreshCcw,
   Square,
   Video,
 } from "lucide-react";
 
-const MAX_OCTETS = 50 * 1024 * 1024;
-const TYPES_OK = ["video/mp4", "video/webm", "video/quicktime"];
-const DUREE_MAX_S = 180;
-
 type Mode = "choix" | "camera" | "apercu" | "envoi" | "publie";
+type CameraStatus = "idle" | "requesting" | "granted" | "denied";
+
+const VIDEO_MIME_CANDIDATES = [
+  "video/webm;codecs=vp9,opus",
+  "video/webm;codecs=vp8,opus",
+  "video/webm",
+  "video/mp4",
+];
+
+const AUDIO_MIME_CANDIDATES = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/mp4",
+  "audio/ogg;codecs=opus",
+];
 
 /**
  * Studio de publication : enregistrer face caméra ou déposer un fichier,
@@ -33,22 +53,37 @@ export function UploadForm({ userId }: { userId: string }) {
   const [mode, setMode] = useState<Mode>("choix");
   const [erreur, setErreur] = useState("");
   const [cameraDispo, setCameraDispo] = useState(true);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>("idle");
   const [enregistre, setEnregistre] = useState(false);
-  const [tempsRestant, setTempsRestant] = useState(DUREE_MAX_S);
+  const [tempsEcoule, setTempsEcoule] = useState(0);
+  const [audioActif, setAudioActif] = useState(false);
+  const [mediaKind, setMediaKind] = useState<MediaKind>("video");
 
-  // Vidéo retenue (enregistrée ou choisie) et sa durée mesurée.
+  // Média retenu (enregistré ou choisi) et sa durée mesurée.
   const [blob, setBlob] = useState<Blob | null>(null);
   const [urlApercu, setUrlApercu] = useState<string | null>(null);
   const dureeRef = useRef(0);
 
-  const fichierRef = useRef<HTMLInputElement>(null);
+  const cameraNativeRef = useRef<HTMLInputElement>(null);
+  const fichierVideoRef = useRef<HTMLInputElement>(null);
+  const fichierAudioRef = useRef<HTMLInputElement>(null);
   const directRef = useRef<HTMLVideoElement>(null);
   const apercuRef = useRef<HTMLVideoElement>(null);
+  const apercuAudioRef = useRef<HTMLAudioElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const morceauxRef = useRef<BlobPart[]>([]);
   const debutRef = useRef(0);
   const compteRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const uploadIdRef = useRef<string | null>(null);
+  const mediaMetaRef = useRef<{ mimeType: string; extension: string } | null>(null);
+
+  const formatRefuse = (kind: MediaKind) =>
+    kind === "audio"
+      ? m.studio.formatAudioRefuse
+      : m.studio.formatRefuse;
+  const tropLourd = (kind: MediaKind) =>
+    kind === "audio" ? m.studio.audioTropLourd : m.studio.tropLourde;
 
   useEffect(() => {
     // Différé d'une frame : détection après hydratation (le serveur rend
@@ -65,6 +100,7 @@ export function UploadForm({ userId }: { userId: string }) {
   const arreterFlux = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    if (directRef.current) directRef.current.srcObject = null;
     if (compteRef.current) {
       clearInterval(compteRef.current);
       compteRef.current = null;
@@ -79,80 +115,242 @@ export function UploadForm({ userId }: { userId: string }) {
     };
   }, [arreterFlux, urlApercu]);
 
-  function retenir(nouveau: Blob, duree: number) {
+  // Le mode caméra est rendu avant que la ref vidéo existe. Attacher le flux
+  // dans un effet évite la course qui produisait un écran noir après l'appui.
+  useEffect(() => {
+    if (
+      mode !== "camera" ||
+      mediaKind !== "video" ||
+      !streamRef.current ||
+      !directRef.current
+    ) {
+      return;
+    }
+    directRef.current.srcObject = streamRef.current;
+    void directRef.current.play().catch(() => setErreur(m.studio.cameraInaccessible));
+  }, [mediaKind, mode, m.studio.cameraInaccessible]);
+
+  function retenir(
+    nouveau: Blob,
+    duree: number,
+    kind: MediaKind,
+    mimeType: string,
+    extension: string,
+  ) {
+    if (nouveau.size === 0) {
+      setErreur(formatRefuse(kind));
+      setMode("choix");
+      return;
+    }
+    if (nouveau.size > MAX_MEDIA_BYTES) {
+      setErreur(tropLourd(kind));
+      setMode("choix");
+      return;
+    }
+    if (duree > MAX_MEDIA_DURATION_SECONDS) {
+      setErreur(m.studio.dureeMax(MAX_MEDIA_DURATION_SECONDS / 60));
+      setMode("choix");
+      return;
+    }
     if (urlApercu) URL.revokeObjectURL(urlApercu);
     dureeRef.current = duree;
+    uploadIdRef.current = crypto.randomUUID();
+    mediaMetaRef.current = { mimeType, extension };
+    setMediaKind(kind);
     setBlob(nouveau);
     setUrlApercu(URL.createObjectURL(nouveau));
     setMode("apercu");
   }
 
-  async function ouvrirCamera() {
+  async function ouvrirCapture(kind: MediaKind) {
     setErreur("");
+    setCameraStatus("requesting");
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setCameraDispo(false);
+      setCameraStatus("denied");
+      setErreur(kind === "audio" ? m.studio.audioIndisponible : m.studio.cameraIndispo);
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", aspectRatio: 9 / 16 },
+        video: kind === "video" ? { facingMode: "user", aspectRatio: 9 / 16 } : false,
         audio: true,
       });
+      if (stream.getAudioTracks().length === 0) {
+        stream.getTracks().forEach((track) => track.stop());
+        setCameraStatus("denied");
+        setErreur(m.studio.audioIndisponible);
+        return;
+      }
+      if (kind === "video" && stream.getVideoTracks().length === 0) {
+        stream.getTracks().forEach((track) => track.stop());
+        setCameraStatus("denied");
+        setErreur(m.studio.cameraIndispo);
+        return;
+      }
       streamRef.current = stream;
+      setMediaKind(kind);
+      setCameraStatus("granted");
+      setAudioActif(true);
       setMode("camera");
       setEnregistre(false);
-      setTempsRestant(DUREE_MAX_S);
-      // Le <video> du direct n'existe qu'après le rendu du mode caméra.
-      requestAnimationFrame(() => {
-        if (directRef.current) {
-          directRef.current.srcObject = stream;
-          directRef.current.play().catch(() => {});
-        }
+      setTempsEcoule(0);
+    } catch (cause) {
+      setCameraStatus("denied");
+      const nom = cause instanceof DOMException ? cause.name : "";
+      setErreur(
+        nom === "NotFoundError" || nom === "OverconstrainedError"
+          ? m.studio.cameraIndispo
+          : m.studio.cameraInaccessible,
+      );
+    }
+  }
+
+  async function sonderDuree(fichier: File, kind: MediaKind): Promise<number | null> {
+    const url = URL.createObjectURL(fichier);
+    const media = document.createElement(kind === "audio" ? "audio" : "video");
+    media.preload = "metadata";
+    media.src = url;
+    try {
+      return await new Promise<number | null>((resolve) => {
+        media.onloadedmetadata = () =>
+          resolve(
+            Number.isFinite(media.duration) && media.duration > 0
+              ? Math.ceil(media.duration)
+              : null,
+          );
+        media.onerror = () => resolve(null);
       });
-    } catch {
-      setCameraDispo(false);
-      setErreur(m.studio.cameraInaccessible);
+    } finally {
+      media.removeAttribute("src");
+      media.load();
+      URL.revokeObjectURL(url);
     }
   }
 
   function demarrerEnregistrement() {
     const stream = streamRef.current;
     if (!stream) return;
+    if (stream.getAudioTracks().length === 0) {
+      setErreur(m.studio.audioIndisponible);
+      setAudioActif(false);
+      return;
+    }
     morceauxRef.current = [];
-    const mime = MediaRecorder.isTypeSupported("video/mp4")
-      ? "video/mp4"
-      : "video/webm";
-    const rec = new MediaRecorder(stream, { mimeType: mime });
+    const candidats =
+      mediaKind === "audio" ? AUDIO_MIME_CANDIDATES : VIDEO_MIME_CANDIDATES;
+    const mime = candidats.find((candidate) => MediaRecorder.isTypeSupported(candidate));
+    if (!mime) {
+      setErreur(formatRefuse(mediaKind));
+      return;
+    }
+    let rec: MediaRecorder;
+    try {
+      rec = new MediaRecorder(stream, { mimeType: mime });
+    } catch {
+      setErreur(formatRefuse(mediaKind));
+      return;
+    }
     recorderRef.current = rec;
     rec.ondataavailable = (e) => {
       if (e.data.size > 0) morceauxRef.current.push(e.data);
     };
+    rec.onerror = () => {
+      rec.onstop = null;
+      recorderRef.current = null;
+      morceauxRef.current = [];
+      arreterFlux();
+      setEnregistre(false);
+      setMode("choix");
+      setErreur(m.studio.cameraInaccessible);
+    };
     rec.onstop = () => {
       // Durée mesurée nous-mêmes : `duration` d'un blob MediaRecorder vaut
       // souvent Infinity tant que les métadonnées ne sont pas finalisées.
-      const duree = Math.round((Date.now() - debutRef.current) / 1000);
+      const duree = Math.max(1, Math.ceil((Date.now() - debutRef.current) / 1000));
+      setEnregistre(false);
+      recorderRef.current = null;
       arreterFlux();
-      retenir(new Blob(morceauxRef.current, { type: mime }), duree);
+      const mimeFinal = rec.mimeType || mime;
+      const enregistrement = new Blob(morceauxRef.current, { type: mimeFinal });
+      morceauxRef.current = [];
+      const extension = extensionPourMime(mimeFinal, mediaKind);
+      if (!extension) {
+        setErreur(formatRefuse(mediaKind));
+        setMode("choix");
+        return;
+      }
+      retenir(
+        enregistrement,
+        duree,
+        mediaKind,
+        mimeFinal.split(";", 1)[0],
+        extension,
+      );
     };
     debutRef.current = Date.now();
-    setEnregistre(true);
-    rec.start();
+    setTempsEcoule(0);
+    try {
+      rec.start(250);
+      setEnregistre(true);
+      setErreur("");
+    } catch {
+      recorderRef.current = null;
+      setErreur(m.studio.cameraInaccessible);
+      return;
+    }
     compteRef.current = setInterval(() => {
-      const ecoule = Math.round((Date.now() - debutRef.current) / 1000);
-      const restant = DUREE_MAX_S - ecoule;
-      setTempsRestant(restant);
-      if (restant <= 0) recorderRef.current?.stop();
+      const ecoule = Math.floor((Date.now() - debutRef.current) / 1000);
+      setTempsEcoule(Math.min(MAX_MEDIA_DURATION_SECONDS, ecoule));
+      if (ecoule >= MAX_MEDIA_DURATION_SECONDS) arreterEnregistrement();
     }, 500);
   }
 
-  function choisirFichier(fichier: File | undefined) {
+  function annulerCapture() {
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") {
+      rec.onstop = null;
+      rec.stop();
+    }
+    recorderRef.current = null;
+    morceauxRef.current = [];
+    arreterFlux();
+    setEnregistre(false);
+    setAudioActif(false);
+    setCameraStatus("idle");
+    setErreur("");
+    setMode("choix");
+  }
+
+  function arreterEnregistrement() {
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") rec.stop();
+  }
+
+  async function choisirFichier(fichier: File | undefined, attendu: MediaKind) {
     setErreur("");
     if (!fichier) return;
-    if (!TYPES_OK.includes(fichier.type)) {
-      setErreur(m.studio.formatRefuse);
+    const descriptor = decrireFichierMedia(fichier, attendu);
+    if (!descriptor) {
+      setErreur(formatRefuse(attendu));
       return;
     }
-    if (fichier.size > MAX_OCTETS) {
-      setErreur(m.studio.tropLourde);
+    if (fichier.size > MAX_MEDIA_BYTES) {
+      setErreur(tropLourd(attendu));
       return;
     }
-    retenir(fichier, 0);
+    const duree = await sonderDuree(fichier, descriptor.kind);
+    if (duree === null) {
+      setErreur(formatRefuse(attendu));
+      return;
+    }
+    retenir(
+      fichier,
+      duree,
+      descriptor.kind,
+      descriptor.mimeType,
+      descriptor.extension,
+    );
   }
 
   /** Capture une frame de l'aperçu en JPEG. Échec = pas de vignette, tant pis. */
@@ -179,30 +377,42 @@ export function UploadForm({ userId }: { userId: string }) {
     setMode("envoi");
     setErreur("");
 
-    const id = crypto.randomUUID();
-    const extension = blob.type.includes("mp4")
-      ? "mp4"
-      : blob.type.includes("quicktime")
-        ? "mov"
-        : "webm";
+    const id = uploadIdRef.current ?? crypto.randomUUID();
+    uploadIdRef.current = id;
+    const metadata = mediaMetaRef.current;
+    if (!metadata) {
+      setMode("apercu");
+      setErreur(formatRefuse(mediaKind));
+      return;
+    }
+    const { extension, mimeType } = metadata;
     const cheminVideo = `${userId}/${id}.${extension}`;
 
     // Durée : mesurée à l'enregistrement, sinon lue sur l'élément d'aperçu.
     let duree = dureeRef.current;
-    const metaDuree = apercuRef.current?.duration;
+    const metaDuree =
+      mediaKind === "audio"
+        ? apercuAudioRef.current?.duration
+        : apercuRef.current?.duration;
     if (!duree && metaDuree && Number.isFinite(metaDuree)) {
       duree = Math.round(metaDuree);
     }
 
-    const vignette = await capturerVignette();
+    if (duree > MAX_MEDIA_DURATION_SECONDS) {
+      setMode("apercu");
+      setErreur(m.studio.dureeMax(MAX_MEDIA_DURATION_SECONDS / 60));
+      return;
+    }
+
+    const vignette = mediaKind === "video" ? await capturerVignette() : null;
 
     const supabase = supabaseBrowser();
     const { error } = await supabase.storage
       .from("videos")
-      .upload(cheminVideo, blob, { contentType: blob.type });
+      .upload(cheminVideo, blob, { contentType: mimeType, upsert: true });
     if (error) {
       setMode("apercu");
-      setErreur(m.studio.envoiRefuse(error.message));
+      setErreur(m.studio.publicationRefusee);
       return;
     }
 
@@ -210,7 +420,10 @@ export function UploadForm({ userId }: { userId: string }) {
     if (vignette) {
       const { error: errVignette } = await supabase.storage
         .from("videos")
-        .upload(`${userId}/${id}.jpg`, vignette, { contentType: "image/jpeg" });
+        .upload(`${userId}/${id}.jpg`, vignette, {
+          contentType: "image/jpeg",
+          upsert: true,
+        });
       if (!errVignette) cheminVignette = `${userId}/${id}.jpg`;
     }
 
@@ -219,6 +432,9 @@ export function UploadForm({ userId }: { userId: string }) {
     formData.set("duration_s", String(duree));
     const resultat = await publishVideo(formData);
     if (!resultat?.ok) {
+      await supabase.storage
+        .from("videos")
+        .remove([cheminVideo, ...(cheminVignette ? [cheminVignette] : [])]);
       setMode("apercu");
       setErreur(m.studio.publicationRefusee);
       return;
@@ -226,13 +442,21 @@ export function UploadForm({ userId }: { userId: string }) {
     if (urlApercu) URL.revokeObjectURL(urlApercu);
     setBlob(null);
     setUrlApercu(null);
+    uploadIdRef.current = null;
+    mediaMetaRef.current = null;
     setMode("publie");
   }
 
   function recommencer() {
+    arreterFlux();
+    setEnregistre(false);
+    setAudioActif(false);
+    setCameraStatus("idle");
     if (urlApercu) URL.revokeObjectURL(urlApercu);
     setBlob(null);
     setUrlApercu(null);
+    uploadIdRef.current = null;
+    mediaMetaRef.current = null;
     setErreur("");
     setMode("choix");
   }
@@ -249,19 +473,49 @@ export function UploadForm({ userId }: { userId: string }) {
           <div className="flex flex-wrap justify-center gap-3">
             {cameraDispo && (
               <button
-                onClick={ouvrirCamera}
- className="btn-paradise flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition hover:scale-105"
+                type="button"
+                onClick={() => void ouvrirCapture("video")}
+                disabled={cameraStatus === "requesting"}
+                className="btn-paradise flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition hover:scale-105 disabled:cursor-wait disabled:opacity-60"
               >
                 <Camera className="h-4 w-4" />
                 <span>{m.studio.enregistrer}</span>
               </button>
             )}
             <button
-              onClick={() => fichierRef.current?.click()}
+              type="button"
+              onClick={() => cameraNativeRef.current?.click()}
+              className="flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-6 py-3 text-sm font-bold text-white transition hover:bg-amber-300/20"
+            >
+              <Camera className="h-4 w-4" />
+              <span>{m.studio.filmerMobile}</span>
+            </button>
+            {cameraDispo && (
+              <button
+                type="button"
+                onClick={() => void ouvrirCapture("audio")}
+                disabled={cameraStatus === "requesting"}
+                className="flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-300/20 disabled:cursor-wait disabled:opacity-60"
+              >
+                <Mic className="h-4 w-4" />
+                <span>{m.studio.enregistrerAudio}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => fichierVideoRef.current?.click()}
               className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-xl transition hover:bg-white/20"
             >
               <FolderOpen className="h-4 w-4" />
-              <span>{m.studio.choisirFichier}</span>
+              <span>{m.studio.choisirVideo}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => fichierAudioRef.current?.click()}
+              className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-xl transition hover:bg-white/20"
+            >
+              <FolderOpen className="h-4 w-4" />
+              <span>{m.studio.choisirAudio}</span>
             </button>
           </div>
           {!cameraDispo && (
@@ -270,11 +524,35 @@ export function UploadForm({ userId }: { userId: string }) {
             </p>
           )}
           <input
-            ref={fichierRef}
+            ref={cameraNativeRef}
             type="file"
-            accept="video/mp4,video/webm,video/quicktime"
+            accept="video/*"
+            capture="user"
             className="hidden"
-            onChange={(e) => choisirFichier(e.target.files?.[0])}
+            onChange={(e) => {
+              void choisirFichier(e.target.files?.[0], "video");
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={fichierVideoRef}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime,.mov"
+            className="hidden"
+            onChange={(e) => {
+              void choisirFichier(e.target.files?.[0], "video");
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={fichierAudioRef}
+            type="file"
+            accept={`${AUDIO_MIME_TYPES.join(",")},.mp3,.m4a,.weba,.ogg,.oga,.wav`}
+            className="hidden"
+            onChange={(e) => {
+              void choisirFichier(e.target.files?.[0], "audio");
+              e.target.value = "";
+            }}
           />
         </div>
       )}
@@ -282,30 +560,51 @@ export function UploadForm({ userId }: { userId: string }) {
       {/* ── Direct caméra ── */}
       {mode === "camera" && (
         <div className="relative mx-auto aspect-[9/16] max-h-[70vh] w-full bg-black">
-          <video
-            ref={directRef}
-            muted
-            playsInline
-            className="h-full w-full object-cover"
-          />
-          {enregistre && (
-            <span className="glass-pill absolute left-1/2 top-4 -translate-x-1/2 rounded-full px-4 py-1.5 text-sm font-bold text-rose-400">
-              ● {Math.floor(tempsRestant / 60)}:{String(tempsRestant % 60).padStart(2, "0")}
-            </span>
+          {mediaKind === "video" ? (
+            <video
+              ref={directRef}
+              muted
+              playsInline
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-5 bg-gradient-to-b from-emerald-950 via-slate-950 to-black">
+              <span className="flex h-28 w-28 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-300/10 shadow-[0_0_60px_rgba(52,211,153,0.2)]">
+                <Mic className="h-12 w-12 text-emerald-200" />
+              </span>
+              <p className="text-sm font-semibold text-white/75">
+                {m.studio.microPret}
+              </p>
+            </div>
           )}
-          <div className="absolute inset-x-0 bottom-6 flex items-center justify-center gap-6">
+          <span
+            role="status"
+            aria-live="polite"
+            className={`glass-pill absolute left-1/2 top-4 -translate-x-1/2 rounded-full px-4 py-1.5 text-center text-sm font-bold ${
+              enregistre ? "text-rose-400" : "text-white/85"
+            }`}
+          >
+            {enregistre
+              ? `● ${m.studio.enregistrement} · ${Math.floor(tempsEcoule / 60)}:${String(tempsEcoule % 60).padStart(2, "0")} / 5:00`
+              : mediaKind === "audio"
+                ? m.studio.microAutorise
+                : m.studio.cameraAutorisation}
+            {audioActif && <span className="ms-2 text-emerald-300">· {m.studio.audioActif}</span>}
+          </span>
+          <div className="absolute inset-x-0 bottom-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] flex items-center justify-center gap-6 sm:bottom-6">
             {!enregistre ? (
               <>
                 <button
+                  type="button"
                   onClick={() => {
-                    arreterFlux();
-                    setMode("choix");
+                    annulerCapture();
                   }}
                   className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-xl"
                 >
                   {m.commun.annuler}
                 </button>
                 <button
+                  type="button"
                   onClick={demarrerEnregistrement}
                   aria-label={m.studio.demarrer}
                   className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-rose-500 shadow-2xl transition hover:scale-105"
@@ -315,7 +614,8 @@ export function UploadForm({ userId }: { userId: string }) {
               </>
             ) : (
               <button
-                onClick={() => recorderRef.current?.stop()}
+                type="button"
+                onClick={arreterEnregistrement}
                 aria-label={m.studio.arreter}
                 className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-rose-600 shadow-2xl"
               >
@@ -330,19 +630,37 @@ export function UploadForm({ userId }: { userId: string }) {
       {(mode === "apercu" || mode === "envoi") && urlApercu && (
         <form action={publier} className="relative">
           <div className="relative mx-auto aspect-[9/16] max-h-[70vh] w-full bg-black">
-            <video
-              ref={apercuRef}
-              src={urlApercu}
-              loop
-              muted
-              autoPlay
-              playsInline
-              className="h-full w-full object-cover"
-            />
+            {mediaKind === "video" ? (
+              <video
+                ref={apercuRef}
+                src={urlApercu}
+                loop
+                muted
+                autoPlay
+                playsInline
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-6 bg-gradient-to-b from-emerald-950 via-slate-950 to-black px-6 pb-52">
+                <span className="flex h-28 w-28 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-300/10 shadow-[0_0_60px_rgba(52,211,153,0.2)]">
+                  <Mic className="h-12 w-12 text-emerald-200" />
+                </span>
+                <p className="text-center text-sm font-semibold text-white/80">
+                  {m.studio.apercuAudio}
+                </p>
+                <audio
+                  ref={apercuAudioRef}
+                  src={urlApercu}
+                  controls
+                  preload="metadata"
+                  className="w-full max-w-sm"
+                />
+              </div>
+            )}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40" />
 
             {/* Saisie par-dessus l'aperçu */}
-            <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-4">
+            <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-4 pb-[max(7rem,calc(6rem+env(safe-area-inset-bottom)))] sm:pb-4">
               <textarea
                 name="caption"
                 rows={2}
@@ -357,8 +675,12 @@ export function UploadForm({ userId }: { userId: string }) {
                 >
                   <option value="temoignage">{m.studio.typeTemoignage}</option>
                   <option value="exhortation">{m.studio.typeExhortation}</option>
-                  <option value="enseignement">{m.studio.typeEnseignement}</option>
-                  <option value="louange">{m.studio.typeLouange}</option>
+                  {mediaKind === "video" && (
+                    <>
+                      <option value="enseignement">{m.studio.typeEnseignement}</option>
+                      <option value="louange">{m.studio.typeLouange}</option>
+                    </>
+                  )}
                 </select>
                 <input
                   name="verse_ref"

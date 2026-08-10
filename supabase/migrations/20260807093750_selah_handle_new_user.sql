@@ -1,0 +1,2 @@
+-- Alias d'historique production de 0003_selah_handle_new_user.sql.
+-- Aucun SQL : le schéma canonique est déjà reconstruit par 0003.

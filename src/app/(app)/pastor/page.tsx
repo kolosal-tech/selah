@@ -2,6 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { joinChurch } from "@/app/actions";
 import { Users, Flame, MessageSquare, HeartHandshake, Building2, TrendingUp } from "lucide-react";
 import { getMessages } from "@/i18n/server";
+import { redirect } from "next/navigation";
 
 export default async function Pastor() {
   const supabase = await supabaseServer();
@@ -9,12 +10,17 @@ export default async function Pastor() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: moi } = await supabase
     .from("profiles")
     .select("church_id, role")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .single();
+
+  if (!moi || !["pasteur", "leader", "admin"].includes(moi.role)) {
+    redirect("/churches");
+  }
 
   const { data: churches } = await supabase
     .from("churches")
@@ -121,4 +127,3 @@ export default async function Pastor() {
     </main>
   );
 }
-

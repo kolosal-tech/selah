@@ -2,23 +2,14 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+import {
+  DEFAULT_PREFERENCES,
+  readAppPreferences,
+  subscribeAppPreferences,
+  updateAppPreference,
+} from "@/lib/app-preferences";
 
-const CLE = "selah:ambiance";
 const VOLUME_CIBLE = 0.32;
-
-/** Préférence persistée, relue à l'hydratation et suivie entre onglets. */
-function lirePreference(): boolean {
-  try {
-    return localStorage.getItem(CLE) === "1";
-  } catch {
-    return false; // navigation privée verrouillée : on reste silencieux
-  }
-}
-
-function sAbonnerPreference(rappel: () => void): () => void {
-  window.addEventListener("storage", rappel);
-  return () => window.removeEventListener("storage", rappel);
-}
 
 /**
  * Nappe d'ambiance optionnelle (pad instrumental bouclé, 32 s).
@@ -29,11 +20,9 @@ function sAbonnerPreference(rappel: () => void): () => void {
  */
 export function AmbianceSonore() {
   const ref = useRef<HTMLAudioElement>(null);
-  // Le choix fait dans cet onglet prime sur la préférence enregistrée ;
-  // `null` = pas encore de choix, on suit ce qui est en mémoire.
-  const [choix, setChoix] = useState<boolean | null>(null);
-  const enregistre = useSyncExternalStore(sAbonnerPreference, lirePreference, () => false);
-  const actif = choix ?? enregistre;
+  const [lectureRefusee, setLectureRefusee] = useState(false);
+  const preferences = useSyncExternalStore(subscribeAppPreferences, readAppPreferences, () => DEFAULT_PREFERENCES);
+  const actif = preferences.ambience && !lectureRefusee;
 
   useEffect(() => {
     const audio = ref.current;
@@ -53,24 +42,12 @@ export function AmbianceSonore() {
           };
           requestAnimationFrame(monter);
         },
-        () => setChoix(false),
+        () => setLectureRefusee(true),
       );
     } else {
       audio.pause();
     }
   }, [actif]);
-
-  // Persistance séparée, et seulement sur choix explicite : écrire dès le
-  // premier rendu écraserait la préférence enregistrée par la valeur de
-  // repli du rendu serveur (silencieux) avant même l'hydratation.
-  useEffect(() => {
-    if (choix === null) return;
-    try {
-      localStorage.setItem(CLE, choix ? "1" : "0");
-    } catch {
-      // Stockage indisponible : le choix vaut pour la session en cours.
-    }
-  }, [choix]);
 
   // Onglet caché : on suspend (batterie, et le son n'a plus d'objet).
   useEffect(() => {
@@ -89,7 +66,10 @@ export function AmbianceSonore() {
       <audio ref={ref} src="/sons/ambiance-selah.m4a" loop preload="none" />
       <button
         type="button"
-        onClick={() => setChoix(!actif)}
+        onClick={() => {
+          setLectureRefusee(false);
+          updateAppPreference("ambience", !actif);
+        }}
         aria-pressed={actif}
         title={actif ? "Couper l'ambiance sonore" : "Activer l'ambiance sonore"}
         className={`tap-bounce flex h-8 w-8 items-center justify-center rounded-full border transition ${

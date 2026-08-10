@@ -2,6 +2,8 @@
 
 :root {
   color-scheme: dark;
+  --font-sans: Arial, Helvetica, sans-serif;
+  --police-selah: Georgia, "Times New Roman", serif;
 }
 
 body {
@@ -34,6 +36,21 @@ body {
   box-shadow: 0 12px 40px 0 rgba(16, 185, 129, 0.15);
 }
 
+/* Le Mur de Prière peut afficher jusqu'à 50 cartes. Sur mobile, laisser le
+   navigateur différer la peinture des cartes hors écran et alléger le flou
+   coûteux des petits GPU, sans changer le rendu desktop. */
+.prayer-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 180px;
+}
+@media (max-width: 639px) {
+  .prayer-card {
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.28);
+  }
+}
+
 .glass-pill {
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(24px);
@@ -55,6 +72,11 @@ body {
   border-color: rgba(251, 191, 36, 0.5);
   outline: none;
   box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid rgba(253, 230, 138, 0.95);
+  outline-offset: 3px;
 }
 
 .text-gradient-gold {
@@ -172,6 +194,16 @@ body {
   .tap-bounce:active {
     transform: none;
   }
+}
+
+/* Ce réglage local complète la préférence système et prend effet immédiatement. */
+html[data-reduced-motion="true"] *,
+html[data-reduced-motion="true"] *::before,
+html[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
 }
 
 /* Hide scrollbars */

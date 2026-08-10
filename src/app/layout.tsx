@@ -1,21 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ServiceWorker } from "./service-worker";
 import { FondAmbiance } from "./fond-ambiance";
 import { dirDe } from "@/i18n/config";
 import { LocaleProvider } from "@/i18n/client";
 import { getLocale, getMessages } from "@/i18n/server";
-
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-
-/** Police du logotype « Selah » : italique fantaisiste, blanche. */
-const playfair = Playfair_Display({
-  variable: "--police-selah",
-  subsets: ["latin"],
-  style: ["italic"],
-  weight: ["500", "600", "700"],
-});
+import { AppPreferenceEffects } from "./app-preference-effects";
 
 export async function generateMetadata(): Promise<Metadata> {
   const m = await getMessages();
@@ -35,7 +25,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang={locale}
       dir={dirDe(locale)}
-      className={`${geist.variable} ${playfair.variable} h-full antialiased dark`}
+      className="h-full antialiased dark"
     >
       <body className="min-h-full bg-slate-950 text-white font-sans selection:bg-amber-500/30">
         {/* Fond « Paradis » : nuit profonde traversée de lumières dorées et
@@ -49,6 +39,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <LocaleProvider locale={locale}>
           <FondAmbiance>{children}</FondAmbiance>
         </LocaleProvider>
+        <AppPreferenceEffects />
         <ServiceWorker />
       </body>
     </html>

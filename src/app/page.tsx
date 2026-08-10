@@ -19,6 +19,7 @@ export default async function Accueil({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   let me: { id: string; username: string | null } | null = null;
   let amened: string[] = [];
@@ -53,6 +54,7 @@ export default async function Accueil({
     .select("*")
     .order("rang_auteur", { ascending: true })
     .order("score", { ascending: false })
+    .order("id", { ascending: true })
     .limit(24);
 
   let liste = (videos ?? []) as FeedVideo[];
@@ -94,6 +96,19 @@ export default async function Accueil({
           }
         : v;
     });
+  }
+
+  const paths = [
+    ...new Set(liste.flatMap((video) => [video.storage_path, video.thumb_path].filter(Boolean))),
+  ] as string[];
+  if (paths.length > 0) {
+    const { data: signed } = await supabase.storage.from("videos").createSignedUrls(paths, 60);
+    const urls = new Map((signed ?? []).map((item) => [item.path, item.signedUrl]));
+    liste = liste.map((video) => ({
+      ...video,
+      media_url: urls.get(video.storage_path) ?? null,
+      thumb_url: video.thumb_path ? (urls.get(video.thumb_path) ?? null) : null,
+    }));
   }
 
   return (

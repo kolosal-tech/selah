@@ -1,0 +1,2 @@
+-- Alias d'historique production de 0005_selah_bucket_videos.sql.
+-- Aucun SQL : le schéma canonique est déjà reconstruit par 0005.

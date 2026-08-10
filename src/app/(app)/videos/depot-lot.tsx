@@ -4,6 +4,12 @@ import { useCallback, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { publishVideo } from "@/app/actions";
 import {
+  decrireFichierMedia,
+  MAX_MEDIA_BYTES,
+  MAX_MEDIA_DURATION_SECONDS,
+  type MediaFileDescriptor,
+} from "@/lib/media-files";
+import {
   AlertTriangle,
   Check,
   FileJson,
@@ -13,9 +19,6 @@ import {
   UploadCloud,
 } from "lucide-react";
 
-const MAX_OCTETS = 50 * 1024 * 1024;
-const TYPES_OK = ["video/mp4", "video/webm", "video/quicktime"];
-const DUREE_MAX_S = 300;
 const EN_PARALLELE = 2;
 
 const TYPES_POST = [
@@ -31,63 +34,71 @@ type Manifeste = Record<string, Fiche>;
 
 type Etat = "attente" | "envoi" | "publie" | "echec";
 type Ligne = {
+  uploadId: string;
   fichier: File;
   etat: Etat;
   message: string;
   fiche: Fiche | null;
+  media: MediaFileDescriptor;
 };
 
-/** Extension attendue par la validation serveur du chemin de stockage. */
-function extensionDe(type: string): string {
-  if (type.includes("mp4")) return "mp4";
-  if (type.includes("quicktime")) return "mov";
-  return "webm";
-}
-
 /**
- * Lit la durée et capture une vignette, sans afficher la vidéo : un élément
- * hors document suffit, et on relâche l'URL objet dans tous les cas.
+ * Lit la durée et capture une vignette pour une vidéo. Un audio est seulement
+ * sondé pour sa durée. L'URL objet est relâchée dans tous les cas.
  */
-async function sonderVideo(
+async function sonderMedia(
   fichier: File,
+  media: MediaFileDescriptor,
 ): Promise<{ duree: number; vignette: Blob | null }> {
   const url = URL.createObjectURL(fichier);
-  const video = document.createElement("video");
-  video.preload = "metadata";
-  video.muted = true;
-  video.playsInline = true;
-  video.src = url;
+  const element = document.createElement(media.kind === "audio" ? "audio" : "video");
+  element.preload = "metadata";
+  element.src = url;
+  if (element instanceof HTMLVideoElement) {
+    element.muted = true;
+    element.playsInline = true;
+  }
 
   try {
     const duree = await new Promise<number>((resolve, reject) => {
-      video.onloadedmetadata = () =>
-        resolve(Number.isFinite(video.duration) ? Math.round(video.duration) : 0);
-      video.onerror = () => reject(new Error("vidéo illisible"));
+      element.onloadedmetadata = () => {
+        if (!Number.isFinite(element.duration) || element.duration <= 0) {
+          reject(new Error("média illisible"));
+          return;
+        }
+        resolve(Math.ceil(element.duration));
+      };
+      element.onerror = () => reject(new Error("média illisible"));
     });
+
+    if (!(element instanceof HTMLVideoElement)) {
+      return { duree, vignette: null };
+    }
 
     // Vignette prise à 40 % : au début, beaucoup de vidéos ouvrent sur un noir.
     const vignette = await new Promise<Blob | null>((resolve) => {
-      video.onseeked = () => {
+      element.onseeked = () => {
         try {
           const canvas = document.createElement("canvas");
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+          canvas.width = element.videoWidth;
+          canvas.height = element.videoHeight;
           const ctx = canvas.getContext("2d");
           if (!ctx || !canvas.width) return resolve(null);
-          ctx.drawImage(video, 0, 0);
+          ctx.drawImage(element, 0, 0);
           canvas.toBlob((b) => resolve(b), "image/jpeg", 0.8);
         } catch {
           resolve(null);
         }
       };
-      video.onerror = () => resolve(null);
-      video.currentTime = Math.max(0.1, (duree || 1) * 0.4);
+      element.onerror = () => resolve(null);
+      element.currentTime = Math.max(0.1, duree * 0.4);
     });
 
     return { duree, vignette };
   } finally {
     URL.revokeObjectURL(url);
-    video.src = "";
+    element.removeAttribute("src");
+    element.load();
   }
 }
 
@@ -121,7 +132,7 @@ export function DepotLot({ userId }: { userId: string }) {
       setErreur("");
       let m = manifeste;
 
-      // Un manifeste déposé avec les vidéos est pris au vol.
+      // Un manifeste déposé avec les médias est pris au vol.
       const json = fichiers.find((f) => f.name.toLowerCase().endsWith(".json"));
       if (json) {
         try {
@@ -134,30 +145,33 @@ export function DepotLot({ userId }: { userId: string }) {
         }
       }
 
-      const videos = fichiers.filter((f) => !f.name.toLowerCase().endsWith(".json"));
+      const medias = fichiers.filter((f) => !f.name.toLowerCase().endsWith(".json"));
       const refusees: string[] = [];
-      const retenues = videos.filter((f) => {
-        if (!TYPES_OK.includes(f.type)) {
-          refusees.push(`${f.name} — format refusé`);
-          return false;
+      const retenues = medias.flatMap((fichier) => {
+        const media = decrireFichierMedia(fichier);
+        if (!media) {
+          refusees.push(`${fichier.name} — format refusé`);
+          return [];
         }
-        if (f.size > MAX_OCTETS) {
-          refusees.push(`${f.name} — plus de 50 Mo`);
-          return false;
+        if (fichier.size > MAX_MEDIA_BYTES) {
+          refusees.push(`${fichier.name} — plus de 50 Mo`);
+          return [];
         }
-        return true;
+        return [{ fichier, media }];
       });
       if (refusees.length) setErreur(refusees.join(" · "));
 
       setLignes((avant) => {
         const deja = new Set(avant.map((l) => l.fichier.name));
         const neuves = retenues
-          .filter((f) => !deja.has(f.name))
-          .map<Ligne>((f) => ({
-            fichier: f,
+          .filter(({ fichier }) => !deja.has(fichier.name))
+          .map<Ligne>(({ fichier, media }) => ({
+            uploadId: crypto.randomUUID(),
+            fichier,
             etat: "attente",
             message: "",
-            fiche: fichePour(f.name, m),
+            fiche: fichePour(fichier.name, m),
+            media,
           }));
         // Ordre du manifeste ignoré : le nom de fichier porte déjà le rang.
         return [...avant, ...neuves].sort((a, b) =>
@@ -170,32 +184,37 @@ export function DepotLot({ userId }: { userId: string }) {
 
   /** Publie une ligne. Renvoie le message d'échec, ou null si tout s'est bien passé. */
   async function publierUne(ligne: Ligne): Promise<string | null> {
-    const { fichier, fiche } = ligne;
+    const { fichier, fiche, media } = ligne;
     const supabase = supabaseBrowser();
-    const id = crypto.randomUUID();
-    const chemin = `${userId}/${id}.${extensionDe(fichier.type)}`;
+    const id = ligne.uploadId;
+    const chemin = `${userId}/${id}.${media.extension}`;
 
     let duree = 0;
     let vignette: Blob | null = null;
     try {
-      const sonde = await sonderVideo(fichier);
+      const sonde = await sonderMedia(fichier, media);
       duree = sonde.duree;
       vignette = sonde.vignette;
     } catch {
-      // Sondage impossible : on publie quand même, sans vignette ni durée.
+      return "média illisible — durée impossible à vérifier";
     }
-    if (duree > DUREE_MAX_S) return `durée ${duree} s — maximum ${DUREE_MAX_S} s`;
+    if (duree > MAX_MEDIA_DURATION_SECONDS) {
+      return `durée ${duree} s — maximum ${MAX_MEDIA_DURATION_SECONDS} s`;
+    }
 
     const { error } = await supabase.storage
       .from("videos")
-      .upload(chemin, fichier, { contentType: fichier.type });
-    if (error) return `envoi refusé — ${error.message}`;
+      .upload(chemin, fichier, { contentType: media.mimeType, upsert: true });
+    if (error) return "envoi refusé — vérifie ta connexion et réessaie";
 
     let cheminVignette = "";
     if (vignette) {
       const { error: errV } = await supabase.storage
         .from("videos")
-        .upload(`${userId}/${id}.jpg`, vignette, { contentType: "image/jpeg" });
+        .upload(`${userId}/${id}.jpg`, vignette, {
+          contentType: "image/jpeg",
+          upsert: true,
+        });
       if (!errV) cheminVignette = `${userId}/${id}.jpg`;
     }
 
@@ -208,7 +227,11 @@ export function DepotLot({ userId }: { userId: string }) {
     donnees.set("type", fiche?.type ?? "temoignage");
 
     const resultat = await publishVideo(donnees);
-    return resultat?.ok ? null : "publication refusée — reconnecte-toi";
+    if (resultat?.ok) return null;
+    await supabase.storage
+      .from("videos")
+      .remove([chemin, ...(cheminVignette ? [cheminVignette] : [])]);
+    return "publication refusée — reconnecte-toi";
   }
 
   async function lancer() {
@@ -259,9 +282,9 @@ export function DepotLot({ userId }: { userId: string }) {
         <span>Dépôt en lot</span>
       </p>
       <p className="mt-2 text-sm text-white/70">
-        Dépose plusieurs vidéos d&apos;un coup, avec leur fichier{" "}
+        Dépose plusieurs vidéos ou audios d&apos;un coup, avec leur fichier{" "}
         <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">.json</code> de
-        légendes. Chaque vidéo part avec sa légende, son type et sa référence, sans
+        légendes. Chaque média part avec sa légende, son type et sa référence, sans
         rien saisir.
       </p>
 
@@ -288,14 +311,14 @@ export function DepotLot({ userId }: { userId: string }) {
           Glisse les fichiers ici, ou clique pour les choisir
         </p>
         <p className="text-xs text-white/50">
-          MP4, WebM ou MOV · 50 Mo et 5 minutes maximum par vidéo
+          MP4, WebM, MOV, MP3, M4A, OGG ou WAV · 50 Mo et 5 minutes maximum
         </p>
       </div>
       <input
         ref={champRef}
         type="file"
         multiple
-        accept="video/mp4,video/webm,video/quicktime,application/json,.json"
+        accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,.mp3,.m4a,.weba,.ogg,.oga,.wav,application/json,.json"
         className="hidden"
         onChange={(e) => {
           void accepter(Array.from(e.target.files ?? []));
@@ -357,7 +380,7 @@ export function DepotLot({ userId }: { userId: string }) {
 
           {sansFiche > 0 && (
             <p className="mt-3 text-xs text-amber-300/90">
-              {sansFiche} vidéo(s) sans entrée dans le manifeste : elles partiront
+              {sansFiche} média(s) sans entrée dans le manifeste : ils partiront
               sans légende, en type « témoignage ».
             </p>
           )}
@@ -380,7 +403,7 @@ export function DepotLot({ userId }: { userId: string }) {
                   ? "Publication en cours…"
                   : echecs > 0
                     ? `Reprendre les ${echecs} en échec`
-                    : `Publier les ${aFaire} vidéos`}
+                    : `Publier les ${aFaire} médias`}
               </span>
             </button>
             <span className="text-xs text-white/60">
