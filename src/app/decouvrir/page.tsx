@@ -92,6 +92,7 @@ export default async function Decouvrir() {
         <div className="flex flex-wrap justify-center gap-4 pt-4">
           <Link
             href="/"
+            prefetch={false}
             className="flex items-center gap-2.5 rounded-full btn-paradise px-8 py-3.5 text-sm font-bold hover:scale-105 transition"
           >
             <Play className="h-4 w-4 fill-current" />
