@@ -25,13 +25,22 @@ RPO/RTO et canaux d’alerte doivent être approuvés avant toute publication.
 
 ## Signaux à brancher
 
-| Signal | Seuil et responsable à décider | Première action |
-|---|---|---|
-| Erreurs Auth / inscription | à définir | Vérifier fournisseur, statut et limitation d’entrée |
-| Erreurs upload / objets orphelins | à définir | Consulter les vues de réconciliation, ne rien purger sans examen |
-| Signalements ouverts / décisions | à définir | Qualifier dans le processus de modération validé |
-| Erreurs traduction / quota | à définir | Vérifier le fournisseur et le budget, ne pas journaliser le texte |
-| Sauvegarde / restauration | RPO, RTO et propriétaire à décider | Ouvrir incident si le dernier exercice est expiré |
+Les seuils ci-dessous sont chiffrés dans `SLO.md` ; ils y sont marqués « à
+valider » tant qu'un responsable n'est pas nommé. Un seuil sans propriétaire
+reste un seuil : il permet de décider s'il faut agir, pas de savoir qui agit.
+Aucune alerte automatique n'existe aujourd'hui — la détection est manuelle,
+par lecture des Vercel Runtime Logs.
+
+| Signal | Seuil | Responsable | Première action |
+|---|---|---|---|
+| Erreurs Auth / inscription | > 1 % des tentatives sur 15 min | à nommer | Vérifier fournisseur, statut et limitation d’entrée |
+| Erreurs upload / objets orphelins | > 20 objets sans ligne, ou 2 échecs consécutifs | à nommer | Consulter les vues de réconciliation, ne rien purger sans examen |
+| Signalements ouverts / décisions | > 24 h sans décision sur un signalement | à nommer | Qualifier dans le processus de modération validé |
+| Erreurs traduction / quota | 429 du fournisseur, ou quota à 80 % | à nommer | Vérifier le fournisseur et le budget, ne pas journaliser le texte |
+| Latence serveur | p95 > 1 500 ms sur 10 min | à nommer | Comparer au déploiement courant, envisager un retour arrière |
+| Réponses 5xx | une seule sur la fenêtre observée | à nommer | Lire les logs du déploiement, corréler au SHA servi |
+| Volume d'événements produit | > 60 lignes/minute pour un acteur | à nommer | Le plafond en base a déjà refusé l'excédent ; chercher la boucle appelante |
+| Sauvegarde / restauration | RPO 24 h, RTO 4 h (à valider) | à nommer | Ouvrir incident si le dernier exercice est expiré |
 
 ## Restauration
 

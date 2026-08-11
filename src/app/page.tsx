@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { isSabbathActive } from "@/lib/sabbath";
 import { getLocale } from "@/i18n/server";
+import { recordProductEventAfter } from "@/lib/analytics/record";
 import { VerticalFeed, type FeedVideo } from "./vertical-feed";
 
 /**
@@ -20,6 +21,8 @@ export default async function Accueil({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  // Première lecture du fil : mesurée une seule fois par compte, jamais par vue.
+  recordProductEventAfter(supabase, { name: "first_feed_view", surface: "feed" });
 
   let me: { id: string; username: string | null } | null = null;
   let amened: string[] = [];

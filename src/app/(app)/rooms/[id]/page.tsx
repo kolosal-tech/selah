@@ -5,6 +5,7 @@ import { closePrayerRoom } from "@/app/actions";
 import { RoomLive, type Message } from "./room-live";
 import { RoomAudio } from "./room-audio";
 import { getMessages } from "@/i18n/server";
+import { recordProductEventAfter } from "@/lib/analytics/record";
 
 export default async function Room({
   params,
@@ -34,6 +35,10 @@ export default async function Room({
   ]);
 
   if (!room) notFound();
+
+  // Nommé `room_opened`, pas « room rejointe » : cette page rend la salle, elle
+  // ne prouve pas l'entrée audio, qui reste une action volontaire côté client.
+  recordProductEventAfter(supabase, { name: "room_opened", surface: "room_create" });
 
   const m = await getMessages();
 

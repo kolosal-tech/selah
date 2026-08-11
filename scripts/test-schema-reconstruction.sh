@@ -29,4 +29,7 @@ docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
 docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
   < tests/media-profile-rls.sql >/dev/null
 
+docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+  < tests/analytics-rls.sql >/dev/null
+
 echo "Schema reconstruction: OK"

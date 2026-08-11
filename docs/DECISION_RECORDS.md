@@ -4,6 +4,12 @@ Ces fiches consignent les choix explicites, leur responsable, leurs preuves et
 les modifications techniques qu’ils autorisent. Elles ne remplacent pas les
 preuves juridiques, produit ou fournisseur requises avant publication.
 
+> Depuis le 11 août 2026, les décisions d'architecture sont versionnées une par
+> fichier dans [`adr/`](adr/README.md), avec un statut appartenant à une liste
+> fermée. Ce document conserve les **autorisations datées** données par
+> l'utilisateur ; les fiches `D-00x` ci-dessous sont reprises et développées par
+> les ADR correspondants. En cas d'écart, l'ADR fait foi.
+
 ## Validation enregistrée — 10 août 2026
 
 L'utilisateur a validé les « recommandations sécurisées par défaut » : aucune
@@ -20,6 +26,15 @@ Une autorisation explicite ultérieure du 10 août 2026 a réactivé les nouvell
 vidéos et le mentorat sous contrôles. La migration `0016` restaure uniquement
 les policies et écrans nécessaires ; les quotas, la modération, la
 confidentialité et la conservation des contenus restent obligatoires.
+
+## Validation enregistrée — 11 août 2026
+
+L'utilisateur a levé explicitement l'obligation de demander une autorisation
+par action : Git (commit, merge, push), les migrations Supabase et le
+déploiement de production Vercel s'exécutent désormais en autonomie. Cette
+levée ne couvre ni dépense réelle, ni paiement, ni souscription, ni nouveau
+fournisseur payant, qui restent soumis à une autorisation ponctuelle. Elle ne
+lève aucune des décisions produit bloquées ci-dessous ni dans `adr/`.
 
 Une autorisation explicite du 10 août 2026 a ensuite fixé la durée générale du
 Mode Sabbat à 12 heures et demandé une exemption limitée au compte de test

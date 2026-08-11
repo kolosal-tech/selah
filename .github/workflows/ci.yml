@@ -1,10 +1,12 @@
 name: CI
 
+# Déclenchement manuel uniquement. Le dépôt est privé : chaque exécution
+# consomme des minutes facturables, et le plafond de dépense Actions reste à
+# 0 USD. La séquence de validation ci-dessous est exactement celle qui tourne
+# en local avant chaque push (voir AGENTS.md) ; la lancer ici sert à prouver un
+# jalon sur un environnement neuf, pas à filtrer le travail courant.
 on:
-  pull_request:
-  push:
-    branches:
-      - selah-mvp
+  workflow_dispatch:
 
 permissions:
   contents: read

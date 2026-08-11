@@ -12,11 +12,9 @@ import {
   nettoyerNomAffiche,
   nomAfficheValide,
 } from "@/lib/identifiant";
+import { isEnabled } from "@/lib/flags";
+import { recordProductEventAfter } from "@/lib/analytics/record";
 
-// Garde-fou produit validé : les nouvelles relations de mentorat et les
-// nouvelles vidéos restent fermées jusqu'au cadrage mineurs/pipeline média.
-const MENTORSHIP_ENABLED = true;
-const VIDEO_PUBLICATION_ENABLED = true;
 // Après authentification, le fil vidéo (route `/`) est l'entrée par défaut.
 const POST_AUTH_REDIRECT = "/";
 
@@ -26,6 +24,9 @@ async function requireUser() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  // Entonnoir unique des actions authentifiées : une seule visite par jour est
+  // conservée, l'index unique en base absorbe la répétition.
+  recordProductEventAfter(supabase, { name: "session_start", surface: "session" });
   return { supabase, user };
 }
 
@@ -48,7 +49,18 @@ async function rateLimit(
   scope: RateLimitScope,
 ) {
   const { data, error } = await supabase.rpc("consume_rate_limit", { p_scope: scope });
-  return !error && data === true;
+  const accepte = !error && data === true;
+  // Un seul point de mesure couvre les douze portées : un refus de quota est le
+  // signal d'abandon le plus exploitable dont dispose le produit aujourd'hui.
+  if (!accepte) {
+    recordProductEventAfter(supabase, {
+      name: "action_refused",
+      surface: scope,
+      outcome: "refused",
+      reason: "rate_limited",
+    });
+  }
+  return accepte;
 }
 
 export async function signup(formData: FormData) {
@@ -85,6 +97,8 @@ export async function signup(formData: FormData) {
     redirect(`/signup?error=${encodeURIComponent(error?.message ?? "inconnu")}`);
   // Le profil est créé par le trigger handle_new_user (avec ou sans confirmation email).
   if (!data.session) redirect("/login?info=confirm");
+  // `redirect()` lève NEXT_REDIRECT : toute mesure placée après serait perdue.
+  recordProductEventAfter(supabase, { name: "signup_completed", surface: "auth" });
   redirect(POST_AUTH_REDIRECT);
 }
 
@@ -261,6 +275,7 @@ export async function createPrayerRequest(formData: FormData) {
     anonymous: Boolean(formData.get("anonymous")),
     country: profile?.country ?? "FR",
   });
+  recordProductEventAfter(supabase, { name: "first_prayer", surface: "prayer_request" });
   revalidatePath("/prayer");
 }
 
@@ -278,6 +293,7 @@ export async function prayNow(requestId: string) {
     country: profile?.country ?? "FR",
   });
   await supabase.rpc("touch_streak");
+  recordProductEventAfter(supabase, { name: "first_prayer", surface: "prayer_action" });
   revalidatePath("/prayer");
   revalidatePath("/map");
 }
@@ -304,7 +320,7 @@ export async function endSabbath() {
 }
 
 export async function offerMentorship(formData: FormData) {
-  if (!MENTORSHIP_ENABLED) return;
+  if (!isEnabled("mentorship")) return;
   const { supabase, user } = await requireUser();
   if (!(await rateLimit(supabase, "follow"))) return;
   await supabase.from("mentor_offers").upsert({
@@ -315,7 +331,7 @@ export async function offerMentorship(formData: FormData) {
 }
 
 export async function requestMentorship(mentorId: string) {
-  if (!MENTORSHIP_ENABLED) return;
+  if (!isEnabled("mentorship")) return;
   const { supabase, user } = await requireUser();
   if (mentorId === user.id || !(await rateLimit(supabase, "follow"))) return;
   await supabase.from("mentorships").insert({
@@ -351,7 +367,16 @@ export async function reportPost(postId: string) {
 // ── Phase 2 ────────────────────────────────────────────────────────────────
 
 export async function publishVideo(formData: FormData) {
-  if (!VIDEO_PUBLICATION_ENABLED) return { ok: false as const, reason: "suspendu" as const };
+  if (!isEnabled("video_publication")) {
+    const supabase = await supabaseServer();
+    recordProductEventAfter(supabase, {
+      name: "action_refused",
+      surface: "video_publish",
+      outcome: "refused",
+      reason: "suspended",
+    });
+    return { ok: false as const, reason: "suspendu" as const };
+  }
   const { supabase, user } = await requireUser();
   if (!(await rateLimit(supabase, "video_publish"))) return { ok: false as const };
   const storagePath = String(formData.get("storage_path") ?? "");
@@ -392,6 +417,7 @@ export async function publishVideo(formData: FormData) {
     if (lookupError || !existing) return { ok: false as const };
   }
   await supabase.rpc("touch_streak");
+  recordProductEventAfter(supabase, { name: "first_publish", surface: "video_publish" });
   revalidatePath("/videos");
   revalidatePath("/");
   return { ok: true as const };

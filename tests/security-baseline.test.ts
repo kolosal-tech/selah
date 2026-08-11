@@ -21,6 +21,39 @@ describe("baseline de sécurité", () => {
     expect(gitignore).toContain("/test-results/");
   });
 
+  it("verrouille l'analytique produit sans donnée personnelle", async () => {
+    const migration = await source(
+      "supabase/migrations/20260811120000_product_analytics.sql",
+    );
+
+    // Aucun chemin de lecture ni d'écriture directe : la RPC est le seul accès.
+    expect(migration).toContain(
+      "revoke all on public.product_events from anon, authenticated",
+    );
+    expect(migration).toContain("using (false)");
+    expect(migration).toContain("with check (false)");
+    // Les fonctions élevées vivent hors du schéma exposé, search_path figé.
+    expect(migration).toContain("security definer");
+    expect(migration).toContain("set search_path = ''");
+    expect(migration).toContain("on delete cascade");
+    // Aucune colonne libre : un texte de prière ne peut pas y entrer.
+    expect(migration).not.toContain("jsonb");
+    expect(migration).not.toMatch(/^\s+(payload|body|content|label)\s+text/m);
+    // Aucune diffusion Realtime de cette table.
+    expect(migration).not.toContain("supabase_realtime");
+  });
+
+  it("n'expose aucun déclencheur automatique de CI facturable", async () => {
+    const ci = await source(".github/workflows/ci.yml");
+
+    // Dépôt privé : chaque exécution consomme des minutes facturables. La
+    // validation courante se fait en local, la CI ne sert qu'aux jalons.
+    expect(ci).toContain("workflow_dispatch:");
+    expect(ci).not.toMatch(/^\s*pull_request:/m);
+    expect(ci).not.toMatch(/^\s*push:/m);
+    expect(ci).not.toMatch(/^\s*schedule:/m);
+  });
+
   it("corrige les advisors critiques et indexe les clés étrangères", async () => {
     const migration = await source(
       "supabase/migrations/20260810231500_security_performance_advisors.sql",
@@ -139,8 +172,13 @@ describe("baseline de sécurité", () => {
     expect(migration).toContain('create policy "videos mise à jour de ses fichiers"');
     expect(migration).toContain('create policy "proposer mentorat"');
     expect(migration).toContain("grant insert (author_id, storage_path, thumb_path, caption, verse_ref, type, duration_s)");
-    expect(actions).toContain("const MENTORSHIP_ENABLED = true");
-    expect(actions).toContain("const VIDEO_PUBLICATION_ENABLED = true");
+    // Les deux constantes historiques sont devenues des flags typés, avec le
+    // même défaut ouvert : la réactivation de `0016` reste vraie côté serveur.
+    const flags = await source("src/lib/flags.ts");
+    expect(actions).toContain('isEnabled("mentorship")');
+    expect(actions).toContain('isEnabled("video_publication")');
+    expect(flags).toContain("mentorship: true");
+    expect(flags).toContain("video_publication: true");
     expect(actions).toContain('rateLimit(supabase, "follow")');
     expect(mentorship).toContain("offerMentorship");
     expect(videos).toContain("UploadForm");

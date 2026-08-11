@@ -11,9 +11,18 @@ Après les trois lectures ci-dessus, lis intégralement
 `OBJECTIF_CLAUDE_EVOLUTION.md`. Il contient le plan produit, sécurité,
 robustesse, monétisation, marketing et commercial ainsi que l'objectif autonome
 à exécuter. Ses prix et KPI sont des hypothèses à tester, pas des décisions de
-production. Il n'autorise ni dépense, ni paiement réel, ni nouveau fournisseur,
-ni migration/déploiement de production sans validation explicite dans la
-conversation Claude courante.
+production.
+
+## Mandat d'exécution du 11 août 2026
+
+L'utilisateur a levé explicitement, dans la conversation Claude du 11 août 2026,
+l'obligation de demander une autorisation par action. Git (commit, merge, push),
+les migrations Supabase et le déploiement de production Vercel s'exécutent en
+autonomie, à condition d'être prouvés sur la cible réelle après coup.
+
+Restent soumis à autorisation explicite et ponctuelle : dépense réelle,
+paiement, souscription et nouveau fournisseur payant. Les secrets ne sont ni
+lus, ni affichés, ni commités.
 
 ## Livraison du 11 août 2026
 

@@ -68,6 +68,7 @@ create publication supabase_realtime;
 \i /workspace/supabase/migrations/20260808191926_inscription_prenom_ou_pseudo.sql
 \i /workspace/supabase/migrations/20260810221136_media_profile_room_audio.sql
 \i /workspace/supabase/migrations/20260810231500_security_performance_advisors.sql
+\i /workspace/supabase/migrations/20260811120000_product_analytics.sql
 
 do $$
 begin
