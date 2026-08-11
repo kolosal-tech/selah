@@ -71,6 +71,7 @@ create publication supabase_realtime;
 \i /workspace/supabase/migrations/20260811120000_product_analytics.sql
 \i /workspace/supabase/migrations/20260811150000_anonymous_events_and_vitals.sql
 \i /workspace/supabase/migrations/20260811160000_anonymous_rpc_invoker.sql
+\i /workspace/supabase/migrations/20260811170000_blocages_et_taxonomie.sql
 
 do $$
 begin

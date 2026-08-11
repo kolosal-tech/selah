@@ -15,6 +15,12 @@ import {
 import { isEnabled } from "@/lib/flags";
 import { recordProductEventAfter } from "@/lib/analytics/record";
 import { recordAnonymousEventAfter } from "@/lib/analytics/anonymous";
+import {
+  estCategorieSignalement,
+  estGesteBlocage,
+  type BlockKind,
+  type ReportCategory,
+} from "@/lib/moderation";
 
 // Après authentification, le fil vidéo (route `/`) est l'entrée par défaut.
 const POST_AUTH_REDIRECT = "/";
@@ -521,15 +527,66 @@ export async function prayForVideo(videoId: string) {
   return { ok: true as const, dejaPrie };
 }
 
-export async function reportVideo(videoId: string) {
+export async function reportVideo(
+  videoId: string,
+  category: ReportCategory = "autre",
+) {
   const { supabase, user } = await requireUser();
   if (!(await rateLimit(supabase, "report"))) return { ok: false as const };
+  // La catégorie vient du client : la contraindre ici évite un aller-retour
+  // pour une valeur que l'énum en base refuserait de toute façon.
+  const categorie = estCategorieSignalement(category) ? category : "autre";
   const { error } = await supabase.from("reports").insert({
     reporter_id: user.id,
     video_id: videoId,
     reason: "signalement utilisateur",
+    category: categorie,
   });
   return { ok: !error };
+}
+
+/**
+ * Met un auteur à distance. Le geste est réversible et n'informe jamais la
+ * personne visée : savoir qu'on est bloqué est ce qui déclenche le
+ * contournement. La RLS borne l'écriture au propriétaire de la liste.
+ */
+export async function blockAuthor(authorId: string, kind: BlockKind) {
+  const { supabase, user } = await requireUser();
+  if (authorId === user.id || !estGesteBlocage(kind)) {
+    return { ok: false as const };
+  }
+  if (!(await rateLimit(supabase, "follow"))) return { ok: false as const };
+  const { error } = await supabase
+    .from("user_blocks")
+    .upsert(
+      { blocker_id: user.id, blocked_id: authorId, kind },
+      { onConflict: "blocker_id,blocked_id" },
+    );
+  if (error) return { ok: false as const };
+  // Un blocage retire aussi l'abonnement existant : le conserver laisserait
+  // l'auteur dans « Abonnements » alors qu'il a disparu du fil.
+  if (kind === "block") {
+    await supabase
+      .from("follows")
+      .delete()
+      .match({ follower_id: user.id, followed_id: authorId });
+  }
+  revalidatePath("/");
+  revalidatePath("/videos");
+  return { ok: true as const };
+}
+
+/** Annule les trois gestes. Un geste irréversible ne serait pas un geste sûr. */
+export async function unblockAuthor(authorId: string) {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("user_blocks")
+    .delete()
+    .match({ blocker_id: user.id, blocked_id: authorId });
+  if (error) return { ok: false as const };
+  revalidatePath("/");
+  revalidatePath("/videos");
+  return { ok: true as const };
 }
 
 /** Masquer ou rétablir une vidéo. Réservé aux modérateurs et admins : la
