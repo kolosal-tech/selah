@@ -36,6 +36,117 @@ stables jusqu'à au moins 100 utilisateurs virtuels simultanés.
 
 ## Cycle courant
 
+Cycle 18 — Vague 0 : mesure, gouvernance et architecture. Terminé le 11 août
+2026.
+
+Mandat. L'utilisateur a levé explicitement l'obligation d'autorisation par
+action : Git, migrations Supabase et déploiement de production s'exécutent en
+autonomie. Dépense réelle, paiement et nouveau fournisseur payant restent
+soumis à autorisation ponctuelle. `AGENTS.md`, `CLAUDE.md` et
+`HANDOFF_CLAUDE.md` ont été mis à jour dans ce sens.
+
+Ce qui est livré. `20260811120000_product_analytics.sql` crée
+`public.product_events`, dont **toutes** les colonnes sont des types énumérés :
+écrire le texte d'une prière, un e-mail ou une légende dans l'analytique n'est
+pas interdit par convention, c'est impossible à taper. RLS activée avec deux
+policies explicitement fausses, `revoke all` sur `anon` et `authenticated`,
+écriture par la seule RPC `record_product_event`, qui attribue l'acteur via
+`auth.uid()` au lieu d'un paramètre. Deux index uniques partiels rendent les
+« premières fois » et la visite quotidienne idempotentes en base. La vue
+`product_events_daily` n'expose que des agrégats et n'est peuplée que pour les
+rôles `moderateur`/`admin`. `on delete cascade` depuis `profiles`.
+`private.purge_product_events` est livrée mais non planifiée : installer
+`pg_cron` est une décision d'exploitation, pas un effet de bord de migration.
+
+L'émission passe par deux entonnoirs serveur — `requireUser()` pour la visite,
+`rateLimit()` pour le refus de quota, dont le `scope` était déjà un nom
+d'événement normalisé — plus cinq appels ponctuels. Tout part dans `after()`,
+hors du chemin de réponse. `src/lib/flags.ts` remplace `MENTORSHIP_ENABLED` et
+`VIDEO_PUBLICATION_ENABLED` par des flags typés à défauts identiques ;
+`analytics` est fermé par défaut.
+
+Gouvernance : neuf ADR dans `docs/adr/` avec statut appartenant à une liste
+fermée (0001 public/âge, 0002 modération, 0003 rétention, 0004 droits média,
+0005 fournisseurs, 0006 paiement, 0007 classement, 0008 analytique, 0009
+flags), `docs/SLO.md`, `docs/ARCHITECTURE_JOURNAL.md`. Le runbook passe de
+« à définir » à des seuils chiffrés avec un responsable « à nommer » : la
+formule dit désormais lequel des trois manque — la mesure, la validation ou la
+personne.
+
+Preuves locales. `next typegen` réussi ; `pnpm lint` et
+`pnpm exec tsc --noEmit --incremental false` sortent 0 ; `pnpm test` passe
+22 fichiers et 165 tests (contre 19 et 138 au début du cycle) ;
+`pnpm test:rls` affiche `RLS baseline: OK` ; `pnpm test:schema` affiche
+`Schema reconstruction: OK` en chaînant la nouvelle fixture
+`tests/analytics-rls.sql`, qui prouve les quatre refus directs, l'attribution
+par session, la déduplication, l'invisibilité de la restitution pour un membre
+et la cascade de suppression ; `NEXT_TELEMETRY_DISABLED=1 pnpm build` compile
+24 routes ; `git diff --check` ne produit rien. Les sept requêtes du tableau de
+bord de `docs/SLO.md` ont été exécutées sans erreur contre un PostgreSQL
+jetable.
+
+Preuves distantes. La migration est appliquée au projet `ilqzmpcmahxxnbdrugyt`
+et vérifiée sur la base réelle : RLS active, 2 policies, **0** grant à `anon`
+ou `authenticated` sur la table, 5 index, 3 fonctions `private` et 1 RPC
+publique. Les quatre fonctions ont `search_path` figé à la chaîne vide, `anon`
+est refusé sur les quatre, et `purge_product_events` est fermée même aux
+comptes authentifiés. Security Advisor retourne zéro alerte ; Performance
+Advisor ne retourne que des `INFO` « unused index », attendus sur une table
+neuve. Le SHA `9efd2f6` est poussé sur `origin/selah-mvp`.
+
+Incidents du cycle. Trois de mes propres assertions échouaient contre leurs
+propres commentaires : chercher `payload` ou `console.` dans un fichier trouve
+aussi la phrase qui explique leur absence. Corrigé par un filtre de
+commentaires appliqué avant l'assertion. `tests/security-baseline.test.ts`
+verrouillait les deux constantes supprimées ; l'assertion vérifie désormais les
+flags et leurs défauts, ce qui teste la même propriété. Le drapeau regex `s`
+passait `tsc` mais cassait `next build`, dont la cible est `ES2017` : il était
+inutile, `[^}]` traverse déjà les retours ligne. Enfin, l'index des ADR généré
+en parallèle décrivait neuf sujets inexistants ; il a été réécrit depuis les
+fichiers réels, et `tests/gouvernance.test.ts` interdit maintenant qu'un index
+mentionne un ADR absent — un index faux est pire qu'une absence d'index.
+
+Décision de coût. `.github/workflows/ci.yml` passe en `workflow_dispatch`
+seul. Le dépôt est privé : chaque `push` déclenchait un run de ~2 min 40 s de
+minutes facturables pour rejouer une séquence déjà exécutée en local. Le push
+de ce cycle n'a déclenché aucun run, ce qui est vérifié par `gh run list`. Le
+build Vercel au push reste actif et gratuit. Hypothèse : la vérification locale
+est équivalente, puisqu'elle exécute les mêmes commandes sur le même lockfile
+et le même Node. Retour arrière : `git revert` du seul `ci.yml`.
+
+La chaîne d'écriture est prouvée **sur la base de production** par une
+transaction annulée : sous `set local role authenticated` avec le `sub` d'un
+compte QA, le premier appel à `record_product_event` retourne `true`, le second
+retourne `false` (déduplication par index unique), la ligne est attribuée au
+`sub` de la session, et le `rollback` laisse la table à zéro ligne — vérifié
+par un `count(*)` séparé après coup. Aucun compte personnel n'a été touché.
+
+Déploiement. `dpl_9p91K2eJTLhfWJeSmMDKd6soQLpD` est `READY` sur l'alias
+`selah-wheat.vercel.app`, porte le SHA `9efd2f6`, et sert `/login` en 200,
+`/` en 307, `/decouvrir` en 200 et `/manifest.json` en 200 avec CSP, HSTS,
+`X-Frame-Options: DENY`, `nosniff` et les permissions caméra/micro limitées à
+l'origine. Playwright public passe 6/6 sur Chromium et Pixel 7 contre cette
+URL. Les logs runtime de cet artefact ne comptent aucune entrée `error`,
+`fatal` ou `warning`. Cet artefact portait `gitDirty=1` (rédaction de
+`state.md` en cours) ; l'artefact final ci-dessous est propre.
+
+Activation de la mesure. `SELAH_FLAG_ANALYTICS=1` est posée dans
+l'environnement de production Vercel et prend effet au redéploiement.
+Fermeture immédiate en cas de doute : `vercel env rm SELAH_FLAG_ANALYTICS
+production` puis redéploiement, soit environ deux minutes ; le code redevient
+alors un `return` immédiat et la table cesse de recevoir des lignes sans
+qu'aucune migration ne soit nécessaire.
+
+Limites de ce cycle. Sans clé `service_role` dans l'application, la RPC est
+réservée aux comptes authentifiés : les échecs de connexion, les échecs
+d'inscription et les abandons anonymes ne sont pas instrumentables. Ouvrir la
+RPC à `anon` la rendrait forgeable et empoisonnerait la mesure. Ces trois
+événements sortent du périmètre, documenté dans `ADR-0008`. Aucune ligne n'a
+encore été écrite par un parcours utilisateur réel : la preuve porte sur la
+capacité de la base à accepter l'appel, pas sur un trafic observé. Les
+objectifs terrain LCP/INP/CLS restent non mesurés faute de RUM, et aucune
+alerte n'est automatique — la détection reste une lecture manuelle des logs.
+
 Cycle 17 — production, QA exhaustive et charge : terminé le 11 août 2026
 (budget maximal : 5 cycles). Cycle 1/5 : audit réel, harnais Playwright/k6,
 comparatif UX, préparation de release et critères de production. Les migrations
