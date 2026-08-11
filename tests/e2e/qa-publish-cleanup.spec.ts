@@ -87,7 +87,61 @@ async function removePublishedMedia(
   }
 }
 
-async function publishAndCleanup(page: Page, kind: "video" | "audio", qaAccount: QaAccount) {
+async function assertCrossOwnerIsolation(
+  ownerClient: SupabaseClient,
+  intruderAccount: QaAccount,
+  caption: string,
+  observedPaths: ReadonlySet<string>,
+) {
+  const intruderClient = cleanupClient();
+  try {
+    const { error: signInError } = await intruderClient.auth.signInWithPassword({
+      email: intruderAccount.email,
+      password: intruderAccount.password,
+    });
+    if (signInError) throw new Error("Authentification du compte QA tiers refusée.");
+
+    const { data: deletedRows, error: deleteError } = await intruderClient
+      .from("videos")
+      .delete()
+      .eq("caption", caption)
+      .select("id");
+    if (deleteError || (deletedRows ?? []).length !== 0) {
+      throw new Error("RLS distante invalide : un tiers peut supprimer la ligne vidéo.");
+    }
+
+    const { data: ownerRows, error: ownerLookupError } = await ownerClient
+      .from("videos")
+      .select("id")
+      .eq("caption", caption);
+    if (ownerLookupError || (ownerRows ?? []).length !== 1) {
+      throw new Error("RLS distante invalide : la ligne propriétaire ne subsiste pas.");
+    }
+
+    if (observedPaths.size > 0) {
+      await intruderClient.storage.from("videos").remove([...observedPaths]);
+      for (const path of observedPaths) {
+        const segments = path.split("/");
+        const filename = segments.pop();
+        const { data: objects, error: listError } = await ownerClient.storage
+          .from("videos")
+          .list(segments.join("/"), { search: filename, limit: 100 });
+        if (listError || !objects?.some((object) => object.name === filename)) {
+          throw new Error("RLS Storage distante invalide : un tiers peut supprimer l'objet.");
+        }
+      }
+    }
+  } finally {
+    await intruderClient.auth.signOut({ scope: "local" });
+  }
+}
+
+async function publishAndCleanup(
+  page: Page,
+  kind: "video" | "audio",
+  qaAccount: QaAccount,
+  intruderAccount: QaAccount,
+) {
   const runtime = observeRuntime(page);
   const caption = `E2E_QA_${kind}_${randomUUID()}`;
   const client = cleanupClient();
@@ -128,6 +182,7 @@ async function publishAndCleanup(page: Page, kind: "video" | "audio", qaAccount:
       const { data, error } = await client.from("videos").select("id").eq("caption", caption);
       return !error && (data ?? []).length === 1;
     }, { timeout: 15_000 }).toBeTruthy();
+    await assertCrossOwnerIsolation(client, intruderAccount, caption, observedPaths);
   } catch (error) {
     bodyFailure = error;
     throw error;
@@ -153,10 +208,10 @@ test.describe("QA mutante — publication puis nettoyage garanti", () => {
   );
 
   test("publie une vidéo QA puis supprime ligne et objets propriétaires", async ({ page }) => {
-    await publishAndCleanup(page, "video", publishAccounts[0]);
+    await publishAndCleanup(page, "video", publishAccounts[0], publishAccounts[1]);
   });
 
   test("publie un audio QA puis supprime ligne et objets propriétaires", async ({ page }) => {
-    await publishAndCleanup(page, "audio", publishAccounts[1]);
+    await publishAndCleanup(page, "audio", publishAccounts[1], publishAccounts[0]);
   });
 });
