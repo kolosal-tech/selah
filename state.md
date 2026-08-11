@@ -36,6 +36,79 @@ stables jusqu'à au moins 100 utilisateurs virtuels simultanés.
 
 ## Cycle courant
 
+Cycle 19 — Fermeture des angles morts de la vague 0, puis première brique de
+la vague 1. Terminé le 11 août 2026.
+
+Trafic réel prouvé. Le parcours QA authentifié joué contre la production écrit
+`first_feed_view` une seule fois pour quatre chargements de `/` sur deux
+navigateurs : l'index unique partiel fait son travail. Ce tir a révélé un trou
+d'instrumentation réel — `requireUser()` ne s'exécutant qu'au moment d'une
+mutation, un membre qui consultait sans publier n'était jamais compté actif, et
+la rétention aurait mesuré la publication plutôt que la visite. Le layout
+authentifié et la page d'accueil émettent désormais `session_start`.
+
+Voie anonyme. `public.anonymous_events` n'a **aucune** colonne d'acteur, donc
+aucune donnée personnelle même pseudonyme, et son écriture exige un jeton
+partagé détenu uniquement côté serveur, dont seul le condensé SHA-256 vit en
+base. La clé `service_role` a été écartée explicitement : elle contourne la RLS
+sur toute la base, alors que ce jeton n'autorise qu'une chose — insérer une
+ligne de compteur. Compromission = compteurs faussés, jamais de fuite. Voir
+`docs/adr/ADR-0010-voie-anonyme-et-rum.md`.
+
+Métriques terrain. `PerformanceObserver` natif mesure LCP, INP et CLS sans
+aucune dépendance ; le serveur réduit la valeur brute à l'un des trois paliers
+de web.dev avant écriture, de sorte qu'aucune empreinte d'appareil ne subsiste.
+La route `/api/vitals` répond 204 en toutes circonstances pour qu'on n'y puisse
+pas sonder la présence du jeton.
+
+Exploitation. `scripts/alertes.mjs` exécute 13 contrôles — disponibilité, garde
+d'authentification, en-têtes de sécurité, latence, erreurs serveur — et sort
+avec le code 1 dès qu'un contrôle est CRITIQUE. Un contrôle non évaluable est
+rapporté comme tel plutôt qu'omis : un contrôle absent se lit trop facilement
+comme un contrôle réussi. Le modèle launchd est fourni, non installé.
+
+Vague 1, première brique. Trois gestes de mise à distance qui ne se valent
+pas : `mute` retire l'auteur du fil sans qu'il le sache, `block` y ajoute
+l'interdiction de s'abonner, `not_interested` garde l'auteur en amortissant son
+score. Deux propriétés sont portées par la RLS et non par l'application : une
+liste de blocage n'est lisible que par son propriétaire, et le refus
+d'abonnement vit dans la policy `follows`. La taxonomie de signalement passe de
+la chaîne libre — invariablement « signalement utilisateur » — à neuf
+catégories fermées, avec un grant colonne par colonne qui empêche un signaleur
+de clore son propre signalement.
+
+Preuves distantes. Migrations `20260811150000`, `20260811160000` et
+`20260811170000` appliquées et vérifiées : `user_blocks` a 4 policies et RLS
+active, `videos_feed` filtre bien sur `user_blocks`, `reports.category` existe,
+la policy d'abonnement est en place, et le fil sert toujours ses 24 vidéos —
+aucune régression de la réécriture de vue. Security Advisor à zéro alerte.
+Écriture réelle observée dans `public.anonymous_events` depuis un vrai
+navigateur : `login_failed`, LCP, INP et CLS, dont un LCP au palier `poor` qui
+est un signal de démarrage à froid, pas un artefact.
+
+Déploiement `dpl_D7sie2ysKSLpCi5BNBfCgU4oVR27` READY sur l'alias canonique ;
+10 scénarios Playwright passent sur Chromium et Pixel 7 contre cette URL, et
+les logs runtime ne comptent aucune entrée error, fatal ou warning.
+
+Incidents du cycle. Deux advisors `WARN` sont apparus après la première
+migration anonyme : `public.record_anonymous_event` était SECURITY DEFINER dans
+le schéma exposé par PostgREST. Le signal était juste, et le motif correct
+existait déjà dans ce dépôt pour `consume_rate_limit` — wrapper INVOKER,
+élévation dans `private`. Corrigé, advisors de nouveau à zéro. Ensuite, le
+build a cassé sur `Failed to collect configuration for /login` : un module
+`"use server"` ne peut exporter que des fonctions asynchrones, et les
+constantes de modération y avaient été placées. Déplacées dans
+`src/lib/moderation.ts`, avec un test qui interdit leur retour. Enfin,
+Playwright n'expose le corps d'un `sendBeacon` ni par `postData()` ni par
+`postDataBuffer()` : le départ de la requête et le contenu de la charge sont
+désormais prouvés par deux scénarios distincts, le second forçant le repli
+`fetch`.
+
+Limite assumée de cette brique. Les actions `blockAuthor` et `unblockAuthor`
+existent, sont typées et prouvées en base, mais **aucun bouton ne les appelle
+encore** : l'interface du rail vidéo est la suite immédiate. Une capacité que
+l'utilisateur ne peut pas atteindre n'est pas une capacité livrée.
+
 Cycle 18 — Vague 0 : mesure, gouvernance et architecture. Terminé le 11 août
 2026.
 
