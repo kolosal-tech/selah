@@ -36,6 +36,66 @@ stables jusqu'à au moins 100 utilisateurs virtuels simultanés.
 
 ## Cycle courant
 
+Cycle 21 — fermeture du sous-ensemble autonome de la vague 1. Terminé le
+11 août 2026.
+
+Gestion durable. Le profil donne désormais accès à `/profile/blocked`. Cette
+page serveur lit uniquement les lignes `user_blocks` du membre courant, joint
+explicitement la cible par `user_blocks_blocked_id_fkey`, puis affiche le
+compte, la nature du geste (`mute`, `block` ou `not_interested`) et sa date.
+L'annulation réutilise `unblockAuthor` : la ligne reste visible si le serveur
+refuse ou si le réseau casse, et disparaît seulement après succès. Les deux
+mutations revalident aussi la page de gestion. Les libellés existent dans les
+douze langues et leur présence non vide est verrouillée par Vitest.
+
+File de modération. La page ne sélectionne plus `reports.reason`, chaîne
+historique invariable « signalement utilisateur » ; elle sélectionne l'énum
+`category` et réutilise exactement `video.motifs[category]`, le même vocabulaire
+localisé que celui présenté au signaleur. Aucune migration n'est nécessaire :
+la table, la taxonomie, les grants colonne par colonne et les policies
+propriétaires/modérateurs ont été livrés au cycle précédent.
+
+Preuves locales. `pnpm install --frozen-lockfile` répond `Already up to date` ;
+`next typegen` réussit ; lint et TypeScript sortent 0 ; Vitest passe 24 fichiers
+et 187 tests ; `test:rls` affiche `RLS baseline: OK` ; `test:schema` affiche
+`Schema reconstruction: OK` ; le build compile 26 routes, dont
+`/profile/blocked`. `pnpm audit --prod --audit-level=high` retourne
+`No known vulnerabilities found`, le scan du diff ne trouve aucun motif de
+secret et `git diff --check` reste vide. L'évaluation mécanique du lot délégué
+par `harness/scripts/evaluer.py` est `ACCEPTE` avec citations et valeurs à 1,
+hallucination à 0.
+
+Preuves navigateur et base. Sur le build local, la non-régression passe 24
+scénarios et en saute 10 volontairement mutants. Le lot `qa-blocks.spec.ts`
+passe ensuite 4/4, en série sur Chromium et Pixel 7 : accès depuis Profil,
+cible d'annulation d'au moins 44 px, aucun débordement horizontal, ligne
+`user_blocks` lue après le geste, puis supprimée depuis la page et absence
+finale confirmée en base. Le même lot passe 4/4 sur l'alias de production ; la
+QA de non-régression distante passe également 24 scénarios et en saute 10.
+
+Release. Le SHA applicatif `8892dd02b4022f96e15bd627c0054da9fa61f337`
+est poussé sur `origin/selah-mvp`. Comme l'intégration Vercel n'a déclenché
+aucun nouvel artefact après le push, le déploiement reproductible a été lancé
+depuis ce checkout propre par `vercel --prod --yes`. L'artefact
+`dpl_7N6TFEJ9oTctGtNHJbuQSVDe2Pt2` est `READY`, cible `production` et sert
+`https://selah-wheat.vercel.app`. Après les deux tirs, les filtres Runtime Logs
+`error`, `warning`, `fatal` et HTTP 500 répondent tous `No logs found`. Aucun
+run GitHub Actions n'est associé au SHA, conformément au workflow manuel.
+
+Incidents et limites. Le premier lot mutant local avait bien passé ses deux
+scénarios mais Next avait journalisé `The destination stream closed early` :
+le test fermait la page dès que la base était propre, avant la fin visible de
+la Server Action. Il attend désormais le toast final ; les deux nouveaux tirs
+local et production sont propres. Les comptes QA `moderateur` et `admin` voient
+zéro signalement vidéo ouvert : le libellé de catégorie est prouvé par le type,
+le test de source, le build et la requête PostgREST sans erreur, mais pas par
+une carte réelle de la file. Aucun faux dossier n'a été créé, car l'ouvrir puis
+le refermer aurait laissé deux événements artificiels dans le journal
+append-only. Restent gelés derrière décision : sanctions et appels
+(`ADR-0002`), export, suppression différée et révocation de sessions
+(`ADR-0003`), ainsi que le cadre mineurs/mentorat. Aucun fournisseur, variable,
+migration, paiement ni dépense n'a été ajouté.
+
 Cycle 20 — Vague 1 : les gestes de mise à distance sont atteignables et
 prouvés de bout en bout. Terminé le 11 août 2026.
 
