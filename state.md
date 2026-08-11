@@ -36,7 +36,7 @@ stables jusqu'à au moins 100 utilisateurs virtuels simultanés.
 
 ## Cycle courant
 
-Cycle 17 — production, QA exhaustive et charge : en cours le 11 août 2026
+Cycle 17 — production, QA exhaustive et charge : terminé le 11 août 2026
 (budget maximal : 5 cycles). Cycle 1/5 : audit réel, harnais Playwright/k6,
 comparatif UX, préparation de release et critères de production. Les migrations
 `0018`, `20260810221136_media_profile_room_audio.sql` et
@@ -135,6 +135,26 @@ observateur serveur équivalent, mais la sous-section Sentry affichait encore
 une phrase générique « non concluant ». Le rapport distingue maintenant Sentry
 absent, corrélation serveur Vercel disponible et télémétrie navigateur
 Playwright séparée. Le tir réel prouve le nouveau rendu du rapport.
+
+Verdict final du cycle 17 : les sept critères sont prouvés. Le SHA applicatif
+`3fb22094c137d5fd8ceefb350a1770f644960c78` puis les commits de preuve
+`8a66edc77b5ca1ac0ae57a6a43379f0995a300c5` et
+`ef6b00de0e5cef30abd0d5193764844196394dc0` sont poussés. La CI finale
+`31465972829` passe en 2 min 37 s. Le déploiement de production
+`dpl_8NpKqmkr2ewZoSpnSZQ5NFjEUY2V` est `READY`, sert l'alias canonique et est
+filtré par le SHA `ef6b00de0e5cef30abd0d5193764844196394dc0` avec `gitDirty=0`.
+La QA finale sur cet artefact passe 18 scénarios et en saute 6 volontairement ;
+le lot mutant vidéo/audio passe 2/2 avec isolation intercomptes RLS table et
+Storage, puis nettoyage propriétaire confirmé. Les logs Vercel sur cette
+fenêtre comptent zéro erreur. Le checkout est synchronisé avec
+`origin/selah-mvp` et ne contient aucune modification locale.
+
+Limites acceptées et documentées : média Playwright simulé plutôt que matériel
+sur deux appareils ; rooms WebRTC en mesh quatre pairs sans TURN/SFU ; livraison
+SMTP du reset non observée ; Sentry absent (corrélation Vercel et observateur
+navigateur utilisés) ; aucun seuil de rupture mesuré au-delà de 150 VU ; Selah
+n'intègre pas encore l'éditeur multi-clips, les effets, les brouillons et tous
+les réglages de confidentialité des plateformes vidéo de référence.
 
 Cycle 16 — reprise fonctionnelle et relais Claude Code : terminé localement le 11 août
 2026 (budget maximal : 5 cycles). Objectif : livrer localement les parcours
