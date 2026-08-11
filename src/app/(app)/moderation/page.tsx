@@ -4,10 +4,11 @@ import { BoutonsModeration } from "./boutons";
 import { ShieldCheck, Flag, EyeOff } from "lucide-react";
 import { getLocale, getMessages } from "@/i18n/server";
 import { pseudo } from "@/i18n/config";
+import type { ReportCategory } from "@/lib/moderation";
 
 type LigneSignalement = {
   id: string;
-  reason: string;
+  category: ReportCategory;
   created_at: string;
   reporter: { username: string } | null;
   video: {
@@ -47,7 +48,7 @@ export default async function Moderation() {
     supabase
       .from("reports")
       .select(
-        `id, reason, created_at,
+        `id, category, created_at,
          reporter:profiles!reports_reporter_id_fkey(username),
          video:videos!reports_video_id_fkey(
            id, storage_path, thumb_path, caption, verse_ref, type, hidden,
@@ -146,7 +147,7 @@ export default async function Moderation() {
                       minute: "2-digit",
                     })}
                     <br />
-                    {m.moderation.motif(s.reason)}
+                    {m.moderation.motif(m.video.motifs[s.category])}
                   </p>
                   <div className="mt-auto pt-2">
                     <BoutonsModeration

@@ -34,6 +34,19 @@ export const ko: Messages = {
     photoSupprimee: "사진이 삭제되었습니다.",
     photoSuppressionErreur: "사진을 삭제하지 못했습니다. 다시 시도하세요.",
   },
+  distance: {
+    titre: "거리를 둔 계정",
+    aide: "음소거하거나 차단했거나 피드에서 덜 보이도록 설정한 계정을 확인하세요.",
+    gerer: "거리를 둔 계정 관리",
+    vide: "현재 거리를 둔 계정이 없습니다.",
+    annuler: "이 선택 취소",
+    annulationErreur: "이 선택을 취소할 수 없습니다. 다시 시도하세요.",
+    gestes: {
+      mute: "음소거됨",
+      block: "차단됨",
+      not_interested: "덜 표시됨",
+    },
+  },
   types: {
     temoignage: "간증",
     exhortation: "권면",

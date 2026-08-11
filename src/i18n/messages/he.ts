@@ -34,6 +34,19 @@ export const he: Messages = {
     photoSupprimee: "התמונה נמחקה.",
     photoSuppressionErreur: "התמונה לא נמחקה. נסה שוב.",
   },
+  distance: {
+    titre: "חשבונות שהורחקו",
+    aide: "כאן נמצאים חשבונות שהשתקת, חסמת או ביקשת לראות פחות בפיד.",
+    gerer: "ניהול חשבונות שהורחקו",
+    vide: "אין כרגע חשבונות שהורחקו.",
+    annuler: "ביטול הבחירה הזו",
+    annulationErreur: "לא ניתן לבטל את הבחירה הזו. נסה שוב.",
+    gestes: {
+      mute: "מושתק",
+      block: "חסום",
+      not_interested: "מוצג פחות",
+    },
+  },
   types: {
     temoignage: "עדות",
     exhortation: "עידוד",

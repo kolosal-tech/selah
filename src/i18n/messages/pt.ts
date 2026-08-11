@@ -34,6 +34,19 @@ export const pt: Messages = {
     photoSupprimee: "Foto removida.",
     photoSuppressionErreur: "A foto não foi removida. Tenta novamente.",
   },
+  distance: {
+    titre: "Contas mantidas à distância",
+    aide: "Encontre as contas silenciadas, bloqueadas ou menos presentes no seu feed.",
+    gerer: "Gerenciar contas mantidas à distância",
+    vide: "Nenhuma conta está mantida à distância no momento.",
+    annuler: "Desfazer esta escolha",
+    annulationErreur: "Não foi possível desfazer esta escolha. Tente novamente.",
+    gestes: {
+      mute: "Silenciada",
+      block: "Bloqueada",
+      not_interested: "Menos presente",
+    },
+  },
   types: {
     temoignage: "Testemunho",
     exhortation: "Exortação",

@@ -120,6 +120,9 @@ test.describe("gestes de mise à distance (mutant, nettoyé)", () => {
 
     // Annulation par le bouton du toast, dans sa fenêtre de cinq secondes.
     await page.getByRole("button", { name: /annuler|undo|cancel/i }).click();
+    // Attendre la fin visible de la Server Action avant de fermer la page :
+    // sinon Playwright peut couper le flux RSC dès que la base est propre.
+    await expect(page.getByText(/c'est annulé|undone/i)).toBeVisible();
 
     await expect
       .poll(
@@ -133,6 +136,62 @@ test.describe("gestes de mise à distance (mutant, nettoyé)", () => {
         { timeout: 10_000 },
       )
       .toBe(0);
+
+    await client.auth.signOut();
+  });
+
+  test("la page des comptes éloignés liste puis annule un geste durable", async ({ page }) => {
+    const { client, userId } = await sessionQa(comptes[0]);
+    const { data: tete } = await client
+      .from("videos_feed")
+      .select("author_id")
+      .order("rang_auteur", { ascending: true })
+      .order("score", { ascending: false })
+      .order("id", { ascending: true })
+      .limit(1);
+    const auteurCible = tete?.[0]?.author_id as string | undefined;
+    test.skip(!auteurCible || auteurCible === userId, "Auteur QA cible indisponible.");
+
+    const { error: insertError } = await client.from("user_blocks").insert({
+      blocker_id: userId,
+      blocked_id: auteurCible,
+      kind: "not_interested",
+    });
+    expect(insertError).toBeNull();
+
+    await page.goto("/login");
+    await page.getByLabel(/e-?mail/i).first().fill(comptes[0].email);
+    await page.getByLabel(/mot de passe|password/i).first().fill(comptes[0].password);
+    await page.getByRole("button", { name: /connexion|se connecter|log in|sign in/i }).first().click();
+    await page.waitForURL((url) => new URL(url).pathname === "/", { timeout: 20_000 });
+    await page.goto("/profile");
+    await page.getByRole("link", { name: /gérer les comptes mis à distance/i }).click();
+    await page.waitForURL((url) => new URL(url).pathname === "/profile/blocked");
+
+    await expect(page.getByText(/^moins présent$/i)).toBeVisible();
+    const annuler = page.getByRole("button", { name: /annuler la mise à distance/i });
+    const boite = await annuler.boundingBox();
+    expect(boite?.height ?? 0).toBeGreaterThanOrEqual(44);
+    const largeur = await page.evaluate(() => ({
+      contenu: document.documentElement.scrollWidth,
+      fenetre: document.documentElement.clientWidth,
+    }));
+    expect(largeur.contenu).toBeLessThanOrEqual(largeur.fenetre);
+    await annuler.click();
+    await expect
+      .poll(
+        async () => {
+          const { data } = await client
+            .from("user_blocks")
+            .select("blocked_id")
+            .match({ blocker_id: userId, blocked_id: auteurCible });
+          return data?.length ?? 0;
+        },
+        { timeout: 10_000 },
+      )
+      .toBe(0);
+    await expect(page.getByRole("listitem")).toHaveCount(0);
+    await expect(page.getByText(/aucun compte/i)).toBeVisible();
 
     await client.auth.signOut();
   });

@@ -40,6 +40,19 @@ export const fr = {
     photoSupprimee: "Photo supprimée.",
     photoSuppressionErreur: "Photo non supprimée. Réessaie.",
   },
+  distance: {
+    titre: "Comptes mis à distance",
+    aide: "Retrouve les comptes masqués, bloqués ou moins présents dans ton fil.",
+    gerer: "Gérer les comptes mis à distance",
+    vide: "Aucun compte n'est mis à distance pour le moment.",
+    annuler: "Annuler la mise à distance",
+    annulationErreur: "Impossible d'annuler cette mise à distance. Réessaie.",
+    gestes: {
+      mute: "Masqué",
+      block: "Bloqué",
+      not_interested: "Moins présent",
+    },
+  },
   types: {
     temoignage: "Témoignage",
     exhortation: "Exhortation",

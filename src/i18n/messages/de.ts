@@ -34,6 +34,19 @@ export const de: Messages = {
     photoSupprimee: "Foto entfernt.",
     photoSuppressionErreur: "Foto nicht entfernt. Bitte erneut versuchen.",
   },
+  distance: {
+    titre: "Auf Abstand gehaltene Konten",
+    aide: "Hier findest du stummgeschaltete, blockierte oder seltener angezeigte Konten.",
+    gerer: "Auf Abstand gehaltene Konten verwalten",
+    vide: "Zurzeit wird kein Konto auf Abstand gehalten.",
+    annuler: "Diese Auswahl rückgängig machen",
+    annulationErreur: "Diese Auswahl konnte nicht rückgängig gemacht werden. Versuche es erneut.",
+    gestes: {
+      mute: "Stummgeschaltet",
+      block: "Blockiert",
+      not_interested: "Seltener angezeigt",
+    },
+  },
   types: {
     temoignage: "Zeugnis",
     exhortation: "Ermahnung",

@@ -34,6 +34,19 @@ export const zh: Messages = {
     photoSupprimee: "照片已删除。",
     photoSuppressionErreur: "照片未删除，请重试。",
   },
+  distance: {
+    titre: "已限制的账号",
+    aide: "在这里查看已隐藏、已屏蔽或要求减少推荐的账号。",
+    gerer: "管理已限制的账号",
+    vide: "目前没有受限制的账号。",
+    annuler: "撤销此选择",
+    annulationErreur: "无法撤销此选择，请重试。",
+    gestes: {
+      mute: "已隐藏",
+      block: "已屏蔽",
+      not_interested: "减少显示",
+    },
+  },
   types: {
     temoignage: "见证",
     exhortation: "劝勉",

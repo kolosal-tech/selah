@@ -582,6 +582,7 @@ export async function blockAuthor(authorId: string, kind: BlockKind) {
   }
   revalidatePath("/");
   revalidatePath("/videos");
+  revalidatePath("/profile/blocked");
   return { ok: true as const };
 }
 
@@ -595,6 +596,7 @@ export async function unblockAuthor(authorId: string) {
   if (error) return { ok: false as const };
   revalidatePath("/");
   revalidatePath("/videos");
+  revalidatePath("/profile/blocked");
   return { ok: true as const };
 }
 

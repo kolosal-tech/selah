@@ -91,6 +91,35 @@ describe("mise à distance d'un auteur", () => {
     expect(actions).toContain("export async function unblockAuthor");
   });
 
+  it("offre une gestion durable, propriétaire et révalidée des comptes éloignés", async () => {
+    const page = await source("src/app/(app)/profile/blocked/page.tsx");
+    const actions = await source("src/app/actions.ts");
+    const button = await source("src/app/(app)/profile/blocked/unblock-button.tsx");
+
+    // La jointure vise explicitement la FK `blocked_id` : `blocker_id` est le
+    // propriétaire courant, il ne doit jamais être affiché comme compte cible.
+    expect(page).toContain('profiles!user_blocks_blocked_id_fkey(username, display_name)');
+    expect(page).toContain('.eq("blocker_id", user.id)');
+    expect(page).toContain('.order("created_at", { ascending: false })');
+    expect(page).toContain("m.distance.gestes[block.kind]");
+    expect(page).toContain("new Date(block.created_at).toLocaleDateString");
+    expect(button).toContain("await unblockAuthor(authorId)");
+    expect(button).toContain("if (result.ok)");
+    expect(button).toContain('role="alert"');
+    expect(actions.match(/revalidatePath\("\/profile\/blocked"\)/g)).toHaveLength(2);
+  });
+
+  it("affiche aux modérateurs la catégorie fermée et localisée", async () => {
+    const page = await source("src/app/(app)/moderation/page.tsx");
+
+    // `reason` reste une valeur historique générique. La file doit lire
+    // l'énum fermé et réutiliser les libellés traduits proposés au signaleur.
+    expect(page).toContain("category: ReportCategory");
+    expect(page).toContain("`id, category, created_at,");
+    expect(page).toContain("m.video.motifs[s.category]");
+    expect(page).not.toContain("m.moderation.motif(s.reason)");
+  });
+
   it("branche les trois gestes et les motifs dans le rail vidéo", async () => {
     const rail = await source("src/app/vertical-feed.tsx");
     // Les actions prouvées en base doivent être atteignables : une capacité
@@ -131,6 +160,34 @@ describe("mise à distance d'un auteur", () => {
         "autre",
       ]) {
         expect(bloc![1], `${fichier} : motif ${cle}`).toMatch(
+          new RegExp(`${cle}: "[^"]+"`),
+        );
+      }
+    }
+  });
+
+  it("traduit la gestion durable dans les douze langues", async () => {
+    const { readdirSync } = await import("node:fs");
+    const fichiers = readdirSync(path.join(racine, "src/i18n/messages")).filter(
+      (f) => f.endsWith(".ts") && f !== "index.ts",
+    );
+    expect(fichiers).toHaveLength(12);
+    for (const fichier of fichiers) {
+      const contenu = await source(`src/i18n/messages/${fichier}`);
+      const bloc = /distance: \{([\s\S]*?)\n  \},\n  types:/.exec(contenu);
+      expect(bloc, `distance absente de ${fichier}`).not.toBeNull();
+      for (const cle of [
+        "titre",
+        "aide",
+        "gerer",
+        "vide",
+        "annuler",
+        "annulationErreur",
+        "mute",
+        "block",
+        "not_interested",
+      ]) {
+        expect(bloc![1], `${fichier} : libellé ${cle}`).toMatch(
           new RegExp(`${cle}: "[^"]+"`),
         );
       }

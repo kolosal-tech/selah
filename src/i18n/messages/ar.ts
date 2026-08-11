@@ -34,6 +34,19 @@ export const ar: Messages = {
     photoSupprimee: "تم حذف الصورة.",
     photoSuppressionErreur: "لم تُحذف الصورة. حاول مجدداً.",
   },
+  distance: {
+    titre: "الحسابات المُبعَدة",
+    aide: "راجع الحسابات التي كتمتها أو حظرتها أو طلبت ظهورها بشكل أقل في صفحتك.",
+    gerer: "إدارة الحسابات المُبعَدة",
+    vide: "لا توجد حسابات مُبعَدة حاليًا.",
+    annuler: "التراجع عن هذا الاختيار",
+    annulationErreur: "تعذّر التراجع عن هذا الاختيار. حاول مرة أخرى.",
+    gestes: {
+      mute: "مكتوم",
+      block: "محظور",
+      not_interested: "أقل ظهورًا",
+    },
+  },
   types: {
     temoignage: "شهادة",
     exhortation: "وعظ",

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ProfilePhotoForm } from "./profile-photo-form";
 import { getMessages } from "@/i18n/server";
@@ -39,6 +40,20 @@ export default async function ProfilePage() {
           <SelecteurLangue />
         </div>
         <p className="text-xs leading-relaxed text-white/50">{m.commun.photoAide}</p>
+      </section>
+      <section className="glass-card flex flex-col gap-3 p-5" aria-labelledby="profile-blocked-title">
+        <div>
+          <h2 id="profile-blocked-title" className="text-lg font-bold text-white">
+            {m.distance.titre}
+          </h2>
+          <p className="mt-1 text-sm text-white/60">{m.distance.aide}</p>
+        </div>
+        <Link
+          href="/profile/blocked"
+          className="btn-paradise inline-flex min-h-11 items-center justify-center self-start rounded-full px-5 py-2.5 text-sm font-semibold"
+        >
+          {m.distance.gerer}
+        </Link>
       </section>
       <AppPreferences />
     </main>

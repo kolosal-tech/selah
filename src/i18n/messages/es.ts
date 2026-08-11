@@ -34,6 +34,19 @@ export const es: Messages = {
     photoSupprimee: "Foto eliminada.",
     photoSuppressionErreur: "No se eliminó la foto. Inténtalo de nuevo.",
   },
+  distance: {
+    titre: "Cuentas apartadas",
+    aide: "Consulta las cuentas silenciadas, bloqueadas o menos presentes en tu feed.",
+    gerer: "Gestionar las cuentas apartadas",
+    vide: "No hay ninguna cuenta apartada por ahora.",
+    annuler: "Deshacer esta elección",
+    annulationErreur: "No se pudo deshacer esta elección. Inténtalo de nuevo.",
+    gestes: {
+      mute: "Silenciada",
+      block: "Bloqueada",
+      not_interested: "Menos presente",
+    },
+  },
   types: {
     temoignage: "Testimonio",
     exhortation: "Exhortación",

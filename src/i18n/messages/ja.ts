@@ -34,6 +34,19 @@ export const ja: Messages = {
     photoSupprimee: "写真を削除しました。",
     photoSuppressionErreur: "写真を削除できませんでした。もう一度お試しください。",
   },
+  distance: {
+    titre: "距離を置いたアカウント",
+    aide: "ミュート、ブロック、またはフィードでの表示を減らしたアカウントを確認できます。",
+    gerer: "距離を置いたアカウントを管理",
+    vide: "現在、距離を置いているアカウントはありません。",
+    annuler: "この選択を取り消す",
+    annulationErreur: "この選択を取り消せませんでした。もう一度お試しください。",
+    gestes: {
+      mute: "ミュート中",
+      block: "ブロック中",
+      not_interested: "表示を減らす",
+    },
+  },
   types: {
     temoignage: "証し",
     exhortation: "勧め",

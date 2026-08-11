@@ -34,6 +34,19 @@ export const en: Messages = {
     photoSupprimee: "Photo removed.",
     photoSuppressionErreur: "Photo was not removed. Try again.",
   },
+  distance: {
+    titre: "Accounts kept at a distance",
+    aide: "Find accounts you muted, blocked, or asked to see less often in your feed.",
+    gerer: "Manage accounts kept at a distance",
+    vide: "No account is being kept at a distance right now.",
+    annuler: "Undo this choice",
+    annulationErreur: "Could not undo this choice. Try again.",
+    gestes: {
+      mute: "Muted",
+      block: "Blocked",
+      not_interested: "Shown less often",
+    },
+  },
   types: {
     temoignage: "Testimony",
     exhortation: "Exhortation",

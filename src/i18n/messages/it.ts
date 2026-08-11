@@ -34,6 +34,19 @@ export const it: Messages = {
     photoSupprimee: "Foto rimossa.",
     photoSuppressionErreur: "Foto non rimossa. Riprova.",
   },
+  distance: {
+    titre: "Account tenuti a distanza",
+    aide: "Ritrova gli account silenziati, bloccati o meno presenti nel tuo feed.",
+    gerer: "Gestisci gli account tenuti a distanza",
+    vide: "Nessun account è tenuto a distanza al momento.",
+    annuler: "Annulla questa scelta",
+    annulationErreur: "Impossibile annullare questa scelta. Riprova.",
+    gestes: {
+      mute: "Silenziato",
+      block: "Bloccato",
+      not_interested: "Meno presente",
+    },
+  },
   types: {
     temoignage: "Testimonianza",
     exhortation: "Esortazione",
