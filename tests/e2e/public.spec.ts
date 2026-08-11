@@ -51,6 +51,9 @@ test.describe("parcours public et authentification", () => {
       () => document.documentElement.scrollWidth > window.innerWidth,
     );
     expect(overflow).toBeFalsy();
+    if ((page.viewportSize()?.width ?? 0) < 640) {
+      await expect(page.locator('select[name="locale"]')).toHaveCSS("font-size", "0px");
+    }
     runtime.assertClean();
   });
 });
