@@ -556,13 +556,22 @@ export async function blockAuthor(authorId: string, kind: BlockKind) {
     return { ok: false as const };
   }
   if (!(await rateLimit(supabase, "follow"))) return { ok: false as const };
+  // Pas d'upsert : PostgREST le traduit en `ON CONFLICT DO UPDATE` sur toutes
+  // les colonnes envoyées, or le grant ne couvre volontairement que
+  // `update (kind)`. Un insert, puis un update du seul `kind` si la ligne
+  // existe déjà, respecte ce modèle de droits minimal.
   const { error } = await supabase
     .from("user_blocks")
-    .upsert(
-      { blocker_id: user.id, blocked_id: authorId, kind },
-      { onConflict: "blocker_id,blocked_id" },
-    );
-  if (error) return { ok: false as const };
+    .insert({ blocker_id: user.id, blocked_id: authorId, kind });
+  if (error?.code === "23505") {
+    const { error: majError } = await supabase
+      .from("user_blocks")
+      .update({ kind })
+      .match({ blocker_id: user.id, blocked_id: authorId });
+    if (majError) return { ok: false as const };
+  } else if (error) {
+    return { ok: false as const };
+  }
   // Un blocage retire aussi l'abonnement existant : le conserver laisserait
   // l'auteur dans « Abonnements » alors qu'il a disparu du fil.
   if (kind === "block") {
