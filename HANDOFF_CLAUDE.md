@@ -1,9 +1,19 @@
 # Relais Claude Code — Selah
 
 Lis d’abord `AGENTS.md`, puis `state.md` et ce document. La racine Git est ce
-dossier `selah/`; le répertoire parent n’est pas un dépôt. Le worktree contient
-de nombreuses modifications antérieures légitimes : ne lance ni reset, clean,
-stash ni réécriture globale.
+dossier `selah/`; le répertoire parent n’est pas un dépôt. Commence par
+`git status --short` : le worktree peut contenir des modifications légitimes à
+préserver. Ne lance ni reset, clean, stash ni réécriture globale.
+
+## Nouveau mandat d'évolution
+
+Après les trois lectures ci-dessus, lis intégralement
+`OBJECTIF_CLAUDE_EVOLUTION.md`. Il contient le plan produit, sécurité,
+robustesse, monétisation, marketing et commercial ainsi que l'objectif autonome
+à exécuter. Ses prix et KPI sont des hypothèses à tester, pas des décisions de
+production. Il n'autorise ni dépense, ni paiement réel, ni nouveau fournisseur,
+ni migration/déploiement de production sans validation explicite dans la
+conversation Claude courante.
 
 ## Livraison du 11 août 2026
 
