@@ -91,6 +91,52 @@ describe("mise à distance d'un auteur", () => {
     expect(actions).toContain("export async function unblockAuthor");
   });
 
+  it("branche les trois gestes et les motifs dans le rail vidéo", async () => {
+    const rail = await source("src/app/vertical-feed.tsx");
+    // Les actions prouvées en base doivent être atteignables : une capacité
+    // sans bouton n'est pas une capacité livrée.
+    expect(rail).toContain('mettreADistance(optionsPour, "mute")');
+    expect(rail).toContain('mettreADistance(optionsPour, "block")');
+    expect(rail).toContain('mettreADistance(optionsPour, "not_interested")');
+    expect(rail).toContain("annulerRetrait");
+    // Les motifs viennent de la liste fermée partagée, jamais d'une liste
+    // dupliquée qui divergerait de l'énum SQL.
+    expect(rail).toContain("REPORT_CATEGORIES.map");
+    expect(rail).toContain("reportVideo(v.id, categorie)");
+    // Le retrait local reste annulable : les positions sont mémorisées.
+    expect(rail).toContain("retraitRef");
+  });
+
+  it("nomme chaque motif dans les douze langues", async () => {
+    // `Messages` étant le type de fr, tsc impose déjà la parité structurelle ;
+    // ce test vérifie qu'aucune locale ne laisse un motif vide.
+    const { readdirSync } = await import("node:fs");
+    const fichiers = readdirSync(path.join(racine, "src/i18n/messages")).filter(
+      (f) => f.endsWith(".ts") && f !== "index.ts",
+    );
+    expect(fichiers).toHaveLength(12);
+    for (const fichier of fichiers) {
+      const contenu = await source(`src/i18n/messages/${fichier}`);
+      const bloc = /motifs: \{([\s\S]*?)\}/.exec(contenu);
+      expect(bloc, `motifs absents de ${fichier}`).not.toBeNull();
+      for (const cle of [
+        "spam",
+        "harcelement",
+        "haine",
+        "violence",
+        "contenu_sexuel",
+        "desinformation",
+        "usurpation",
+        "hors_sujet",
+        "autre",
+      ]) {
+        expect(bloc![1], `${fichier} : motif ${cle}`).toMatch(
+          new RegExp(`${cle}: "[^"]+"`),
+        );
+      }
+    }
+  });
+
   it("refuse de se bloquer soi-même, en base et dans l'action", async () => {
     const migration = await source(
       "supabase/migrations/20260811170000_blocages_et_taxonomie.sql",

@@ -6,11 +6,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   addVideoComment,
+  blockAuthor,
   prayForVideo,
   reportVideo,
   toggleFollow,
   toggleVideoAmen,
+  unblockAuthor,
 } from "@/app/actions";
+import {
+  REPORT_CATEGORIES,
+  type BlockKind,
+  type ReportCategory,
+} from "@/lib/moderation";
 import {
   BookOpen,
   Camera,
@@ -19,12 +26,14 @@ import {
   Heart,
   HeartHandshake,
   MessageCircle,
+  MoreHorizontal,
   Music2,
   Play,
   Plus,
   Send,
   Share2,
   Sparkles,
+  ShieldOff,
   Volume2,
   VolumeX,
   X,
@@ -140,6 +149,11 @@ export function VerticalFeed({
   const [partage, setPartage] = useState<string | null>(null);
   const [signalee, setSignalee] = useState<Set<string>>(new Set());
   const [amenOuverte, setAmenOuverte] = useState<FeedVideo | null>(null);
+  // Panneau d'options : signaler avec motif, masquer, bloquer, voir moins.
+  const [optionsPour, setOptionsPour] = useState<FeedVideo | null>(null);
+  const [motifsPour, setMotifsPour] = useState<FeedVideo | null>(null);
+  // Auteur retiré du fil à l'instant : le toast propose d'annuler.
+  const [annulable, setAnnulable] = useState<string | null>(null);
   const [amenateurs, setAmenateurs] = useState<Amenateur[]>([]);
   const [chargeAmenateurs, setChargeAmenateurs] = useState(false);
 
@@ -156,6 +170,10 @@ export function VerticalFeed({
   const activeRef = useRef(0);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retraitRef = useRef<{
+    authorId: string;
+    entrees: { v: FeedVideo; i: number }[];
+  } | null>(null);
 
   async function signerMedias(elements: FeedVideo[]): Promise<FeedVideo[]> {
     const paths = [
@@ -363,10 +381,13 @@ export function VerticalFeed({
     }
   }
 
-  function afficherToast(message: string) {
+  function afficherToast(message: string, duree = 2200) {
     setToast(message);
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => setToast(null), 2200);
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      setAnnulable(null);
+    }, duree);
   }
 
   const nbAmen = useCallback(
@@ -484,15 +505,74 @@ export function VerticalFeed({
     }
   }
 
-  async function signaler(v: FeedVideo) {
+  async function signalerAvecMotif(v: FeedVideo, categorie: ReportCategory) {
+    setMotifsPour(null);
+    setOptionsPour(null);
     if (exigeCompte()) return;
-    if (signalee.has(v.id)) return;
+    if (signalee.has(v.id)) {
+      afficherToast(m.video.signalementOk);
+      return;
+    }
     setSignalee((prev) => new Set(prev).add(v.id));
     try {
-      const r = await reportVideo(v.id);
+      const r = await reportVideo(v.id, categorie);
       afficherToast(r?.ok ? m.video.signalementOk : m.video.signalementEchec);
     } catch {
       afficherToast(m.video.signalementEchec);
+    }
+  }
+
+  async function mettreADistance(v: FeedVideo, kind: BlockKind) {
+    setOptionsPour(null);
+    if (exigeCompte()) return;
+    try {
+      const r = await blockAuthor(v.author_id, kind);
+      if (!r?.ok) {
+        afficherToast(m.video.gesteEchec);
+        return;
+      }
+      if (kind === "not_interested") {
+        afficherToast(m.video.gesteOk);
+        return;
+      }
+      // Retrait local immédiat, mémorisé avec les positions pour l'annulation.
+      setVideos((prev) => {
+        retraitRef.current = {
+          authorId: v.author_id,
+          entrees: prev
+            .map((video, i) => ({ v: video, i }))
+            .filter(({ v: video }) => video.author_id === v.author_id),
+        };
+        return prev.filter((video) => video.author_id !== v.author_id);
+      });
+      setAnnulable(v.author_id);
+      afficherToast(m.video.gesteOk, 5000);
+    } catch {
+      afficherToast(m.video.gesteEchec);
+    }
+  }
+
+  async function annulerRetrait() {
+    const retrait = retraitRef.current;
+    setAnnulable(null);
+    if (!retrait) return;
+    retraitRef.current = null;
+    try {
+      const r = await unblockAuthor(retrait.authorId);
+      if (!r?.ok) {
+        afficherToast(m.video.gesteEchec);
+        return;
+      }
+      setVideos((prev) => {
+        const suivant = [...prev];
+        for (const { v, i } of retrait.entrees) {
+          suivant.splice(Math.min(i, suivant.length), 0, v);
+        }
+        return suivant;
+      });
+      afficherToast(m.video.gesteAnnule);
+    } catch {
+      afficherToast(m.video.gesteEchec);
     }
   }
 
@@ -652,8 +732,16 @@ export function VerticalFeed({
       {/* Toast spirituel (« Prière envoyée ✨ ») */}
       {toast && (
         <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4.25rem)] z-40 flex justify-center">
-          <span className="glass-pill animate-toast-in rounded-full px-5 py-2 text-sm font-semibold text-amber-200 shadow-xl">
+          <span className="glass-pill animate-toast-in flex items-center gap-3 rounded-full px-5 py-2 text-sm font-semibold text-amber-200 shadow-xl">
             {toast}
+            {annulable && (
+              <button
+                onClick={annulerRetrait}
+                className="pointer-events-auto rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white transition hover:bg-white/25"
+              >
+                {m.commun.annuler}
+              </button>
+            )}
           </span>
         </div>
       )}
@@ -940,13 +1028,13 @@ export function VerticalFeed({
                   </span>
                 </button>
 
-                {/* Signaler (discret) */}
+                {/* Options : signaler, masquer, bloquer, voir moins (discret) */}
                 <button
-                  onClick={() => signaler(v)}
-                  aria-label={m.video.signaler}
+                  onClick={() => setOptionsPour(v)}
+                  aria-label={m.video.options}
                   className="flex h-11 w-11 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white/80 md:h-8 md:w-8"
                 >
-                  <Flag className={`h-4 w-4 ${signalee.has(v.id) ? "fill-white/40" : ""}`} />
+                  <MoreHorizontal className="h-5 w-5" />
                 </button>
               </div>
             </section>
@@ -984,6 +1072,110 @@ export function VerticalFeed({
 
       {/* Nav basse : pilule seule (pas de chips sur le feed plein écran) */}
       <FloatingPillNav chips={false} />
+
+      {optionsPour && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-md"
+          onClick={() => setOptionsPour(null)}
+        >
+          <div
+            className="animate-sheet-up relative flex w-full flex-col rounded-t-3xl border-t border-white/20 bg-slate-900/90 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 shadow-2xl backdrop-blur-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative flex items-center justify-center border-b border-white/10 pb-3">
+              <span className="text-[17px] font-bold text-white">{m.video.options}</span>
+              <button
+                onClick={() => setOptionsPour(null)}
+                aria-label={m.video.fermerOptions}
+                className="absolute end-0 rounded-full bg-white/10 p-1.5 text-white/70 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-1 py-3">
+              <button
+                onClick={() => {
+                  const v = optionsPour;
+                  setOptionsPour(null);
+                  setMotifsPour(v);
+                }}
+                className="flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start transition hover:bg-white/10"
+              >
+                <Flag className="h-5 w-5 shrink-0 text-white/70" />
+                <span className="text-sm font-semibold text-white">{m.video.signaler}</span>
+              </button>
+              <button
+                onClick={() => mettreADistance(optionsPour, "not_interested")}
+                className="flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start transition hover:bg-white/10"
+              >
+                <VolumeX className="h-5 w-5 shrink-0 text-white/70" />
+                <span className="flex-1">
+                  <span className="block text-sm font-semibold text-white">{m.video.moinsVoir}</span>
+                  <span className="block text-xs text-white/50">{m.video.moinsVoirAide}</span>
+                </span>
+              </button>
+              <button
+                onClick={() => mettreADistance(optionsPour, "mute")}
+                className="flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start transition hover:bg-white/10"
+              >
+                <ShieldOff className="h-5 w-5 shrink-0 text-white/70" />
+                <span className="flex-1">
+                  <span className="block text-sm font-semibold text-white">
+                    {m.video.masquerAuteur(pseudo(optionsPour.username ?? m.commun.frere))}
+                  </span>
+                  <span className="block text-xs text-white/50">{m.video.masquerAuteurAide}</span>
+                </span>
+              </button>
+              <button
+                onClick={() => mettreADistance(optionsPour, "block")}
+                className="flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start transition hover:bg-white/10"
+              >
+                <X className="h-5 w-5 shrink-0 text-rose-300" />
+                <span className="flex-1">
+                  <span className="block text-sm font-semibold text-rose-200">
+                    {m.video.bloquerAuteur(pseudo(optionsPour.username ?? m.commun.frere))}
+                  </span>
+                  <span className="block text-xs text-white/50">{m.video.bloquerAuteurAide}</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {motifsPour && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-md"
+          onClick={() => setMotifsPour(null)}
+        >
+          <div
+            className="animate-sheet-up relative flex max-h-[70vh] w-full flex-col rounded-t-3xl border-t border-white/20 bg-slate-900/90 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 shadow-2xl backdrop-blur-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative flex items-center justify-center border-b border-white/10 pb-3">
+              <span className="text-[17px] font-bold text-white">{m.video.choisirMotif}</span>
+              <button
+                onClick={() => setMotifsPour(null)}
+                aria-label={m.video.fermerOptions}
+                className="absolute end-0 rounded-full bg-white/10 p-1.5 text-white/70 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="no-scrollbar flex-1 space-y-1 overflow-y-auto py-3">
+              {REPORT_CATEGORIES.map((categorie) => (
+                <button
+                  key={categorie}
+                  onClick={() => signalerAvecMotif(motifsPour, categorie)}
+                  className="flex min-h-11 w-full items-center rounded-2xl px-3 py-2.5 text-start text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  {m.video.motifs[categorie]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {amenOuverte && (
         <div
