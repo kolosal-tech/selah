@@ -36,6 +36,46 @@ stables jusqu'à au moins 100 utilisateurs virtuels simultanés.
 
 ## Cycle courant
 
+Cycle 20 — Vague 1 : les gestes de mise à distance sont atteignables et
+prouvés de bout en bout. Terminé le 11 août 2026.
+
+Interface. Le drapeau discret du rail vidéo devient un menu d'options :
+signaler avec un motif parmi les neuf catégories fermées, voir moins de
+contenus de ce compte, le masquer, ou le bloquer. Le retrait est immédiat et
+local, et le toast offre cinq secondes d'annulation avec restauration aux
+positions mémorisées : c'est l'annulation qui rend le geste sûr, pas une
+confirmation préalable qui ferait hésiter. Les libellés existent dans les
+douze langues (déléguées puis vérifiées mécaniquement : parité imposée par le
+type `Messages`, et un test refuse tout motif vide par locale). Les motifs
+affichés viennent de `REPORT_CATEGORIES` — jamais d'une liste dupliquée.
+
+Incident décisif du cycle : le premier tir mutant en production a échoué avec
+`42501 permission denied for table user_blocks`. Cause isolée par un upsert
+rejoué hors navigateur sous la session QA : PostgREST traduit un upsert en
+`INSERT ... ON CONFLICT DO UPDATE` portant sur toutes les colonnes envoyées,
+or le grant ne couvre volontairement que `update (kind)`. Correctif : insert,
+puis update du seul `kind` sur 23505 — le modèle de droits minimal est
+conservé, c'est l'appel qui s'y plie. Leçon : la fixture locale ne pouvait pas
+l'attraper, elle ne passe pas par PostgREST ; seul le tir sur la cible réelle
+exerce la traduction REST des requêtes.
+
+Preuves. `tests/e2e/qa-blocks.spec.ts` (lot mutant, `E2E_ALLOW_MUTATING_BLOCKS=1`)
+passe sur `https://selah-wheat.vercel.app` : depuis le navigateur, le menu
+masque l'auteur en tête de fil, la ligne `user_blocks` (kind `mute`, bon
+`blocked_id`) est lue en base sous la session QA, l'annulation du toast la
+retire, et l'état final est identique à l'état initial — zéro blocage résiduel
+vérifié par requête directe après le tir. Local : lint 0, tsc 0, 24 fichiers /
+184 tests Vitest, RLS et reconstruction OK, build 25 routes. Production :
+déploiement `dpl_FjsFGXfDNSW6JbijmqsRYkvvtwEX` READY sur l'alias canonique,
+10 scénarios de non-régression Playwright verts, zéro entrée error/fatal/
+warning sur la fenêtre du tir.
+
+Reste ouvert dans la vague 1 : page de gestion des comptes mis à distance
+(lister/annuler hors de la fenêtre du toast), affichage du motif dans la file
+de modération, puis les chantiers dépendant d'ADR — export de compte,
+suppression différée, révocation de sessions (ADR-0003), sanctions graduées et
+appels (ADR-0002).
+
 Cycle 19 — Fermeture des angles morts de la vague 0, puis première brique de
 la vague 1. Terminé le 11 août 2026.
 
