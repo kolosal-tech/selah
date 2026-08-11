@@ -5,7 +5,6 @@ import { config, spikeStages, runJourney } from '../lib/journey.js';
 export const options = {
   stages: spikeStages(),
   thresholds: config.thresholds,
-  thresholdsAbortOnFail: false,
 };
 
 export default function spikeScenario() {

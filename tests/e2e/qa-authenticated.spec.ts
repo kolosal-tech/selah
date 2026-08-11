@@ -42,7 +42,14 @@ test.describe("parcours QA authentifié (lecture seule)", () => {
 
   test("le feed actif est focalisable et activable au clavier", async ({ page }) => {
     const runtime = observeRuntime(page);
-    await page.goto("/");
+    const feedResponse = await page.goto("/");
+    expect(feedResponse).not.toBeNull();
+    expect(feedResponse?.status()).toBe(200);
+    const feedHeaders = feedResponse?.headers() ?? {};
+    expect(feedHeaders["cache-control"] ?? "").toMatch(
+      /private|no-store|no-cache|max-age=0|must-revalidate/i,
+    );
+    expect((feedHeaders["x-vercel-cache"] ?? "").toUpperCase()).not.toBe("HIT");
     await expect(page.locator('[data-load-marker="selah-authenticated-feed-v1"]')).toBeVisible();
 
     const activeVideo = page.locator('video[role="button"][tabindex="0"]');

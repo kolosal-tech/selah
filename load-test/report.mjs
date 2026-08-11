@@ -183,9 +183,13 @@ if (paliers.length > 1) {
 w(`## Erreurs applicatives sur la fenetre du tir`);
 w();
 if (!sentry.available) {
-  w(`Indisponible : ${sentry.reason}`);
+  w(`Sentry indisponible : ${sentry.reason}`);
   w();
-  w(`**Sans traceur d'erreurs, ce tir est a considerer comme non concluant, pas comme reussi.**`);
+  if (vercel.available) {
+    w(`La correlation serveur repose sur les journaux Vercel ci-dessous. La telemetrie d'erreurs navigateur est couverte separement par Playwright, pas par ce tir k6.`);
+  } else {
+    w(`**Sans traceur d'erreurs, ce tir est a considerer comme non concluant, pas comme reussi.**`);
+  }
 } else {
   w(`${sentry.countInWindow} issue(s) dont l'activite chevauche \`${t0}\` -> \`${t1}\` (source : ${sentry.source}).`);
   w();

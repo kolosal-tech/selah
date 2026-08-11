@@ -10,10 +10,12 @@ async function source(relativePath: string) {
 }
 
 describe("harnais de charge Selah", () => {
-  it("exerce au moins 100 utilisateurs virtuels sans autoriser le distant par défaut", async () => {
+  it("exerce au moins 100 utilisateurs virtuels avec des seuils approuvés sans rendre le modèle permissif", async () => {
     const config = JSON.parse(await source("load-test/config.json"));
+    const example = JSON.parse(await source("load-test/config.example.json"));
 
-    expect(config.thresholdsApproved).toBe(false);
+    expect(config.thresholdsApproved).toBe(true);
+    expect(example.thresholdsApproved).toBe(false);
     expect(config.load.vus).toBeGreaterThanOrEqual(100);
     expect(config.stress.steps).toContain(100);
     expect(config.spike.vus).toBeGreaterThanOrEqual(100);
@@ -56,5 +58,13 @@ describe("harnais de charge Selah", () => {
     expect(qaRunner).toContain("createServerClient");
     expect(qaRunner).toContain("AUTH_COOKIE");
     expect(qaRunner).not.toContain("console.log");
+  });
+
+  it("n'exporte aucune option k6 inconnue", async () => {
+    const stress = await source("load-test/scenarios/stress.js");
+    const spike = await source("load-test/scenarios/spike.js");
+
+    expect(stress).not.toContain("thresholdsAbortOnFail");
+    expect(spike).not.toContain("thresholdsAbortOnFail");
   });
 });

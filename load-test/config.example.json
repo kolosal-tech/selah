@@ -2,6 +2,7 @@
   "_comment": "Copier en config.json et adapter. Parcours, marqueurs de contenu et seuils ne sont pas devinables : ils se valident avec un humain avant le premier tir.",
 
   "baseUrl": "http://localhost:3000",
+  "thresholdsApproved": false,
 
   "pages": [
     {

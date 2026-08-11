@@ -57,6 +57,85 @@ k6 distants. Les échecs doivent entraîner un correctif puis un nouveau cycle,
 jamais une répétition identique. Seuils k6 proposés en attente de validation :
 p95 parcours < 1 500 ms, échecs < 1 %, page témoin p95 < 800 ms.
 
+Cycle 2/5 : release et QA production prouvées. Le SHA
+`3fb22094c137d5fd8ceefb350a1770f644960c78` est poussé, son workflow GitHub
+Actions `31445270661` passe l'ensemble install/typegen/lint/TypeScript/Vitest,
+RLS, reconstruction, build et Playwright public en 2 min 44 s. Le déploiement
+Vercel `dpl_Dnr8PZgKG1zo7ddXFnw7dyYJcukL` est `READY`, aliasé sur
+`https://selah-wheat.vercel.app`, porte ce SHA et `gitDirty=0`. Ses en-têtes
+appliquent CSP, HSTS, anti-frame, nosniff et les permissions caméra/micro
+limitées à l'origine. Sur ce déploiement, Playwright HTTPS donne 18 tests passés
+et 6 scénarios mutants volontairement sautés ; le tir mutant séparé donne 2/2
+pour publication vidéo/audio avec suppression vérifiée des lignes et objets.
+Une demande réelle de reset QA a été acceptée par Supabase (la livraison SMTP
+dans la boîte n'est pas observée). Les logs du déploiement final comptent zéro
+entrée `error` et zéro réponse 5xx sur la fenêtre QA.
+
+Le contrôle Pixel 7 mesure 412 px de viewport et 412 px de contenu, cinq liens
+de navigation basse, une vidéo active et les contrôles critiques à 44 px. Une
+inspection de capture a révélé puis fait corriger le texte natif parasite du
+sélecteur compact de langue ; la capture finale prouve un globe seul, 44 px,
+`font-size: 0px`, sans débordement ni incident navigateur. Incidents du cycle :
+pnpm absent avant le cache CI, préchargement public d'une route protégée sans
+variables CI, upload Vercel incluant les `.env` locaux, compte QA principal au
+quota publication, et libellé natif compact visible. Chaque cause a reçu un
+correctif distinct et un nouveau test vert.
+
+Arrêt du cycle 2 : le harnais distant conserve `thresholdsApproved: false`.
+Le tir smoke/load/stress/spike à 100–150 VU attend la validation humaine exacte
+des seuils proposés ; aucune charge de production n'est lancée avant ce geste.
+
+Cycle 3/5 : les quatre profils k6 ont été exécutés contre le build de
+production local sur `127.0.0.1:3100`. Le smoke passe 4 requêtes et 8/8
+contrôles. Le load tient 100 VU avec 9 416 requêtes, 18 832/18 832 contrôles,
+0 % d'erreur, p95 global 211 ms, p99 249 ms et maximum 792 ms. Le stress tient
+les paliers 25/50/100/150 VU avec 12 024 requêtes, 24 048/24 048 contrôles,
+0 % d'erreur, p95 202 ms, p99 242 ms et maximum 661 ms ; aucun palier de rupture
+n'est atteint jusqu'à 150 VU. Le pic atteint 100 VU en deux secondes et passe
+4 260 requêtes, 8 520/8 520 contrôles, 0 % d'erreur, p95 212 ms, p99 254 ms
+et maximum 511 ms. Aucune interruption k6 ni sortie serveur locale n'est
+observée. Les rapports sont `load-test/reports/20260811T002239Z-smoke.md`,
+`20260811T002257Z-load.md`, `20260811T002556Z-stress.md` et
+`20260811T003007Z-spike.md`.
+
+Incident du cycle 3 : stress et spike exportaient l'option k6 inconnue
+`thresholdsAbortOnFail`. Elle était ignorée et ne changeait pas les mesures,
+mais a été supprimée. `k6 inspect` accepte désormais les deux scénarios,
+ESLint sort avec le code 0 et `tests/load-harness.test.ts` passe 4/4 avec une
+régression dédiée. Le verdict local reste volontairement NON CONCLUANT pour
+la production : un serveur local n'offre ni corrélation Vercel ni traceur
+d'erreurs distant. Le seul verrou du critère 5 reste la validation humaine des
+seuils avant les mêmes tirs sur `https://selah-wheat.vercel.app`.
+
+Cycle 4/5 : seuils validés explicitement par l'utilisateur et quatre tirs
+production terminés le 11 août 2026. La configuration précédente a été
+sauvegardée sous
+`harness/backup/prompts/20260811T060800Z-selah-load-thresholds/` avec SHA-256
+identique avant activation. Le smoke passe 4 requêtes et 8/8 contrôles. Le
+load tient 100 VU pendant deux minutes avec 8 196 requêtes, 16 392/16 392
+contrôles, 0 % d'erreur, p95 trafic 930 ms et p95 témoin 48 ms. Le stress
+tient 25/50/100/150 VU avec 10 648 requêtes, 21 296/21 296 contrôles, 0 %
+d'erreur, p95 trafic 896 ms et p95 témoin 44 ms ; les p95 par palier sont
+852/857/846/830 ms, donc aucun palier de rupture n'est atteint jusqu'à 150
+VU. Le spike atteint 100 VU en deux secondes et passe 3 776 requêtes,
+7 552/7 552 contrôles, 0 % d'erreur, p95 trafic 891 ms et p95 témoin 44 ms.
+
+Au total : 22 624 requêtes, 45 248 contrôles réussis, 0 contrôle échoué et
+5 656 itérations. Vercel Runtime Logs est disponible et retourne zéro 5xx ou
+log `error` sur chaque tir ainsi que sur la fenêtre globale
+`06:09:33Z–06:18:55Z`. Aucun motif de cookie/JWT n'est présent dans les
+artefacts. Playwright production passe 4/4 sur Chromium et Pixel 7 en prouvant
+HTTP 200 et cache du feed authentifié non `HIT`, avec observateur runtime
+propre. Rapports : `20260811T060933Z-smoke.md`, `20260811T061005Z-load.md`,
+`20260811T061319Z-stress.md` et `20260811T061741Z-spike.md` sous
+`load-test/reports/`.
+
+Incident du cycle 4 : le verdict utilisait correctement Vercel comme
+observateur serveur équivalent, mais la sous-section Sentry affichait encore
+une phrase générique « non concluant ». Le rapport distingue maintenant Sentry
+absent, corrélation serveur Vercel disponible et télémétrie navigateur
+Playwright séparée. Le tir réel prouve le nouveau rendu du rapport.
+
 Cycle 16 — reprise fonctionnelle et relais Claude Code : terminé localement le 11 août
 2026 (budget maximal : 5 cycles). Objectif : livrer localement les parcours
 demandés sans déploiement de production. Critères binaires :

@@ -6,8 +6,6 @@ import { config, stressStages, runJourney } from '../lib/journey.js';
 export const options = {
   stages: stressStages(),
   thresholds: config.thresholds,
-  // Un depassement ne doit pas couper le tir : on veut voir OU ca casse.
-  thresholdsAbortOnFail: false,
 };
 
 export default function stressScenario() {
