@@ -23,6 +23,7 @@ export default async function Accueil({
   if (!user) redirect("/login");
   // Première lecture du fil : mesurée une seule fois par compte, jamais par vue.
   recordProductEventAfter(supabase, { name: "first_feed_view", surface: "feed" });
+  recordProductEventAfter(supabase, { name: "session_start", surface: "session" });
 
   let me: { id: string; username: string | null } | null = null;
   let amened: string[] = [];

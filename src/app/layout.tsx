@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ServiceWorker } from "./service-worker";
+import { WebVitals } from "./web-vitals";
 import { FondAmbiance } from "./fond-ambiance";
 import { dirDe } from "@/i18n/config";
 import { LocaleProvider } from "@/i18n/client";
@@ -41,6 +42,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         </LocaleProvider>
         <AppPreferenceEffects />
         <ServiceWorker />
+        <WebVitals />
       </body>
     </html>
   );

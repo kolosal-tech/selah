@@ -7,6 +7,7 @@ import { BarreRetour, FloatingPillNav, MotSelah } from "../nav-components";
 import { SelecteurLangue } from "../selecteur-langue";
 import { Flame, LogOut, UserCircle } from "lucide-react";
 import { getMessages } from "@/i18n/server";
+import { recordProductEventAfter } from "@/lib/analytics/record";
 
 export default async function AppLayout({
   children,
@@ -26,6 +27,10 @@ export default async function AppLayout({
     .single();
 
   if (isSabbathActive(profile?.sabbath_until)) redirect("/sabbath");
+
+  // Visite du jour : une navigation suffit à compter un compte actif, sans
+  // attendre qu'il publie. L'index unique en base absorbe les répétitions.
+  recordProductEventAfter(supabase, { name: "session_start", surface: "session" });
 
   const m = await getMessages();
 

@@ -26,10 +26,12 @@ const RUBRIQUES = [
 const STATUTS = ["proposé", "accepté", "bloqué", "remplacé"];
 
 describe("journal des décisions d'architecture", () => {
-  it("couvre les neuf sujets de la vague 0", () => {
-    expect(FICHIERS_ADR).toHaveLength(9);
-    for (let i = 1; i <= 9; i += 1) {
-      const numero = `ADR-000${i}`;
+  it("est numéroté sans trou depuis ADR-0001", () => {
+    // Numérotation contiguë plutôt que compte figé : un ADR ajouté doit être
+    // contrôlé, pas faire échouer la suite au motif qu'il existe.
+    expect(FICHIERS_ADR.length).toBeGreaterThanOrEqual(9);
+    for (let i = 1; i <= FICHIERS_ADR.length; i += 1) {
+      const numero = `ADR-${String(i).padStart(4, "0")}`;
       expect(FICHIERS_ADR.some((f) => f.startsWith(numero))).toBe(true);
     }
   });

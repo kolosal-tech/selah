@@ -14,6 +14,7 @@ import {
 } from "@/lib/identifiant";
 import { isEnabled } from "@/lib/flags";
 import { recordProductEventAfter } from "@/lib/analytics/record";
+import { recordAnonymousEventAfter } from "@/lib/analytics/anonymous";
 
 // Après authentification, le fil vidéo (route `/`) est l'entrée par défaut.
 const POST_AUTH_REDIRECT = "/";
@@ -93,8 +94,10 @@ export async function signup(formData: FormData) {
     password,
     options: { data: { username, display_name: nom, country, locale } },
   });
-  if (error || !data.user)
+  if (error || !data.user) {
+    recordAnonymousEventAfter(supabase, { name: "signup_failed", surface: "auth" });
     redirect(`/signup?error=${encodeURIComponent(error?.message ?? "inconnu")}`);
+  }
   // Le profil est créé par le trigger handle_new_user (avec ou sans confirmation email).
   if (!data.session) redirect("/login?info=confirm");
   // `redirect()` lève NEXT_REDIRECT : toute mesure placée après serait perdue.
@@ -207,7 +210,12 @@ export async function login(formData: FormData) {
   });
   // Ne jamais réinjecter le message Supabase dans l'URL ou l'interface : il
   // varie selon le fournisseur et peut révéler des détails inutiles.
-  if (error) redirect("/login?error=invalid-credentials");
+  if (error) {
+    // Aucune session n'existe à cet instant : la mesure passe par la voie
+    // anonyme, qui ne porte aucun acteur. L'e-mail saisi n'est pas transmis.
+    recordAnonymousEventAfter(supabase, { name: "login_failed", surface: "auth" });
+    redirect("/login?error=invalid-credentials");
+  }
   redirect(POST_AUTH_REDIRECT);
 }
 

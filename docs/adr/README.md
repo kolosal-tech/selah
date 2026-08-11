@@ -46,6 +46,7 @@ La liste est fermée. Aucun autre statut n'est admis.
 | [ADR-0007](ADR-0007-philosophie-du-classement.md) | Philosophie du classement du fil | proposé |
 | [ADR-0008](ADR-0008-analytique-produit.md) | Analytique produit : `product_events`, RLS deny-all et RPC d'écriture | accepté |
 | [ADR-0009](ADR-0009-feature-flags.md) | Feature flags par variable d'environnement | accepté |
+| [ADR-0010](ADR-0010-voie-anonyme-et-rum.md) | Voie anonyme et métriques terrain sans clé `service_role` | accepté |
 
 ADR-0005 est accepté en tant que grille : la méthode d'évaluation fait
 autorité. Les choix qu'elle sert à instruire restent bloqués tant que les

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.selah.alertes</string>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/node</string>
+		<string>/Users/mskolosalgmail.com/Developer/TIKTOK_CRETIEN/selah/scripts/alertes.mjs</string>
+	</array>
+
+	<key>WorkingDirectory</key>
+	<string>/Users/mskolosalgmail.com/Developer/TIKTOK_CRETIEN/selah</string>
+
+	<key>StartInterval</key>
+	<integer>1800</integer>
+
+	<key>RunAtLoad</key>
+	<false/>
+
+	<key>ProcessType</key>
+	<string>Background</string>
+
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>SELAH_ALERTES_LOG</key>
+		<string>/Users/mskolosalgmail.com/harness/logs/selah-alertes.log</string>
+	</dict>
+
+	<key>StandardOutPath</key>
+	<string>/Users/mskolosalgmail.com/harness/logs/com.selah.alertes.out.log</string>
+
+	<key>StandardErrorPath</key>
+	<string>/Users/mskolosalgmail.com/harness/logs/com.selah.alertes.err.log</string>
+</dict>
+</plist>

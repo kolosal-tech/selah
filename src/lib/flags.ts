@@ -15,6 +15,7 @@ export const FEATURE_FLAGS = [
   "mentorship",
   "video_publication",
   "analytics",
+  "analytics_anonymous",
 ] as const;
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[number];
@@ -24,6 +25,7 @@ const DEFAUTS: Record<FeatureFlag, boolean> = {
   mentorship: true,
   video_publication: true,
   analytics: false,
+  analytics_anonymous: false,
 };
 
 /**
@@ -38,6 +40,8 @@ function valeurBrute(flag: FeatureFlag): string | undefined {
       return process.env.SELAH_FLAG_VIDEO_PUBLICATION;
     case "analytics":
       return process.env.SELAH_FLAG_ANALYTICS;
+    case "analytics_anonymous":
+      return process.env.SELAH_FLAG_ANALYTICS_ANONYMOUS;
   }
 }
 

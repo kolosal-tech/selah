@@ -9,8 +9,10 @@ describe("isEnabled", () => {
   it("conserve les défauts historiques du produit", () => {
     expect(isEnabled("mentorship")).toBe(true);
     expect(isEnabled("video_publication")).toBe(true);
-    // La mesure est fermée par défaut : elle ne s'active qu'explicitement.
+    // Les deux voies de mesure sont fermées par défaut : elles ne s'activent
+    // qu'explicitement, et la voie anonyme exige en plus un jeton serveur.
     expect(isEnabled("analytics")).toBe(false);
+    expect(isEnabled("analytics_anonymous")).toBe(false);
   });
 
   it("accepte les deux écritures d'activation et de désactivation", () => {
@@ -47,6 +49,7 @@ describe("isEnabled", () => {
       "mentorship",
       "video_publication",
       "analytics",
+      "analytics_anonymous",
     ]);
   });
 });
