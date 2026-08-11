@@ -37,8 +37,12 @@ begin
     refus := refus + 1;
   end;
 
+  -- L'implémentation est exécutable par `anon` depuis le correctif d'advisor
+  -- 20260811160000 : c'est le jeton qui protège, pas le droit d'exécution.
+  -- Ce qui doit rester inatteignable, c'est le magasin de jetons lui-même,
+  -- sans quoi n'importe qui pourrait en forger un.
   begin
-    perform private.record_anonymous_event_impl('x', 'login_failed', 'auth', null, null);
+    perform 1 from private.analytics_secrets;
   exception when insufficient_privilege then
     refus := refus + 1;
   end;
