@@ -53,6 +53,16 @@ export const fr = {
       not_interested: "Moins présent",
     },
   },
+  age: {
+    titre: "Attestation 18+",
+    inscription: "J'atteste avoir au moins 18 ans.",
+    inscriptionAide: "Selah ne demande ni date de naissance, ni document, ni âge numérique.",
+    erreurInscription: "Tu dois attester avoir au moins 18 ans pour créer un compte.",
+    profilAide: "Le mentorat est fermé tant que cette attestation n'est pas enregistrée.",
+    attester: "Attester avoir 18 ans ou plus",
+    attestee: "Attestation 18+ enregistrée.",
+    mentoratFerme: "Le mentorat est fermé jusqu'à ton attestation 18+.",
+  },
   types: {
     temoignage: "Témoignage",
     exhortation: "Exhortation",

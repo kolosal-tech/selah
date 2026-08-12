@@ -2,6 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { offerMentorship, requestMentorship } from "@/app/actions";
 import { Users, UserPlus } from "lucide-react";
 import { getMessages } from "@/i18n/server";
+import { isEnabled } from "@/lib/flags";
 
 export default async function Mentorship() {
   const supabase = await supabaseServer();
@@ -9,6 +10,22 @@ export default async function Mentorship() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const { data: attestation } = user
+    ? await supabase.from("age_attestations").select("user_id").eq("user_id", user.id).maybeSingle()
+    : { data: null };
+  const eligible = isEnabled("mentorship") && Boolean(attestation);
+
+  if (!eligible) {
+    return (
+      <main className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gradient-gold">{m.mentorat.titre}</h1>
+          <p className="mt-1 text-sm text-white/70">{m.age.mentoratFerme}</p>
+        </div>
+      </main>
+    );
+  }
 
   const [{ data: offers }, { data: mine }] = await Promise.all([
     supabase.from("mentor_offers").select("*, profiles(username, role)").limit(50),

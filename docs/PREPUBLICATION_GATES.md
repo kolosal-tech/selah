@@ -5,7 +5,7 @@ ni avis juridique, ni approbation des choix ci-dessous.
 
 Les fiches à compléter sont dans `DECISION_RECORDS.md`.
 
-## État au 10 août 2026
+## État au 11 août 2026
 
 La publication applicative production est **active sous contrôles** depuis le
 10 août 2026 : la réactivation des nouvelles vidéos et du mentorat a été
@@ -21,13 +21,23 @@ contrôlés sans ouvrir d'accès anonyme ni supprimer les décisions ci-dessous.
 
 ## Décisions produit et protection des personnes
 
+Les choix de public/âge, modération et cycle de compte sont désormais acceptés
+dans ADR-0011, ADR-0012 et ADR-0013. Leur acceptation fixe la politique ; elle
+ne prouve pas leur exécution technique. Les fonctionnalités correspondantes
+restent fermées ou limitées jusqu'aux preuves ci-dessous.
+
 | Décision attendue | Preuve à joindre avant publication |
 |---|---|
-| Public admis et âge minimal, par territoire | Règle validée, parcours d'âge et traitement des refus |
-| Mentorat | Soit désactivation complète, soit vérification, supervision, blocage/signalement, escalade et règles mineurs validés |
-| Modération | Taxonomie, rôles, délais de traitement, procédure d'urgence, sanctions, appels et conservation des preuves |
-| Données sensibles | Politique de confidentialité, rétention, export/suppression, contact et registre des sous-traitants revus par un professionnel compétent |
+| Public/âge — ADR-0011 accepté | Inscription 18+ avec attestation explicite non précochée et versionnée ; aucun DOB/document/âge numérique ; preuve RLS/UI et responsables d'incident |
+| Mentorat — ADR-0011 accepté | Flag fail-closed sans configuration ; attestations des deux parties ; relations historiques conservées mais inaccessibles si attestation manquante |
+| Modération — ADR-0012 accepté | Dossier traçable, neuf catégories fermées, masquage réversible, rôles RLS, avertissement/restriction 7/30 jours, appel distinct sous 30 jours avec révocation prouvée |
+| Données/cycle compte — ADR-0013 accepté | Export JSON authentifié ; suppression rétractable J+14 ; Cron Vercel quotidien, purge Storage avant Auth, idempotence, reçu anonyme, révocation de sessions et rétentions prouvées |
 | Droits média | Provenance, licences, consentements image/voix et procédure de retrait pour chaque contenu publié |
+
+Les risques backup/PITR et le périmètre de restauration Storage restent des
+preuves techniques ouvertes. Aucun test de purge ne doit supprimer un compte
+QA durable : utiliser un compte QA jetable identifié et vérifier l'état cible
+après exécution.
 
 ## Décisions fournisseur et exploitation
 

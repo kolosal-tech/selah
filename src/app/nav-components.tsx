@@ -50,14 +50,14 @@ export function MotSelah({ taille = 34 }: { taille?: number }) {
 
 /** Barre de retour contextuelle : sur les écrans secondaires (hors onglets
  *  principaux), un chevron « retour » + un raccourci accueil. */
-export function BarreRetour() {
+export function BarreRetour({ mentorshipVisible = true }: { mentorshipVisible?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const m = useMessages();
   const estOnglet = NAV(m).some((n) => n.href === pathname);
   if (estOnglet) return null;
 
-  const page = NAV_PLUS(m).find((n) => n.href === pathname);
+  const page = NAV_PLUS(m).filter((n) => mentorshipVisible || n.href !== "/mentorship").find((n) => n.href === pathname);
 
   return (
     <div className="mb-4 flex items-center gap-3">
@@ -82,7 +82,7 @@ export function BarreRetour() {
   );
 }
 
-export function FloatingPillNav({ chips = true }: { chips?: boolean }) {
+export function FloatingPillNav({ chips = true, mentorshipVisible = true }: { chips?: boolean; mentorshipVisible?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const m = useMessages();
@@ -131,7 +131,7 @@ export function FloatingPillNav({ chips = true }: { chips?: boolean }) {
           </button>
           <div ref={chipsRef} className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
             <div className="flex w-max min-w-full items-center gap-2 whitespace-nowrap px-1">
-              {NAV_PLUS(m).map((item) => {
+              {NAV_PLUS(m).filter((item) => mentorshipVisible || item.href !== "/mentorship").map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
                 return (

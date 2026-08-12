@@ -47,6 +47,16 @@ export const en: Messages = {
       not_interested: "Shown less often",
     },
   },
+  age: {
+    titre: "18+ attestation",
+    inscription: "I confirm that I am at least 18 years old.",
+    inscriptionAide: "Selah does not ask for a birth date, document, or numeric age.",
+    erreurInscription: "You must confirm that you are at least 18 to create an account.",
+    profilAide: "Mentorship stays closed until this attestation is recorded.",
+    attester: "Confirm that I am 18 or older",
+    attestee: "18+ attestation recorded.",
+    mentoratFerme: "Mentorship is closed until you complete the 18+ attestation.",
+  },
   types: {
     temoignage: "Testimony",
     exhortation: "Exhortation",

@@ -7,7 +7,7 @@ afterEach(() => {
 
 describe("isEnabled", () => {
   it("conserve les défauts historiques du produit", () => {
-    expect(isEnabled("mentorship")).toBe(true);
+    expect(isEnabled("mentorship")).toBe(false);
     expect(isEnabled("video_publication")).toBe(true);
     // Les deux voies de mesure sont fermées par défaut : elles ne s'activent
     // qu'explicitement, et la voie anonyme exige en plus un jeton serveur.
@@ -40,7 +40,7 @@ describe("isEnabled", () => {
       vi.stubEnv("SELAH_FLAG_ANALYTICS", valeur);
       expect(isEnabled("analytics")).toBe(false);
       vi.stubEnv("SELAH_FLAG_MENTORSHIP", valeur);
-      expect(isEnabled("mentorship")).toBe(true);
+      expect(isEnabled("mentorship")).toBe(false);
     }
   });
 

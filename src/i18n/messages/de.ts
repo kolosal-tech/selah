@@ -47,6 +47,16 @@ export const de: Messages = {
       not_interested: "Seltener angezeigt",
     },
   },
+  age: {
+    titre: "18+-Bestätigung",
+    inscription: "Ich bestätige, dass ich mindestens 18 Jahre alt bin.",
+    inscriptionAide: "Selah fragt weder Geburtsdatum noch Dokument oder Zahlenalter ab.",
+    erreurInscription: "Du musst bestätigen, mindestens 18 Jahre alt zu sein, um ein Konto zu erstellen.",
+    profilAide: "Mentoring bleibt geschlossen, bis diese Bestätigung gespeichert ist.",
+    attester: "Bestätigen, dass ich 18 oder älter bin",
+    attestee: "18+-Bestätigung gespeichert.",
+    mentoratFerme: "Mentoring ist geschlossen, bis du die 18+-Bestätigung abgeschlossen hast.",
+  },
   types: {
     temoignage: "Zeugnis",
     exhortation: "Ermahnung",

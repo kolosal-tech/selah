@@ -5,6 +5,7 @@ import { ProfilePhotoForm } from "./profile-photo-form";
 import { getMessages } from "@/i18n/server";
 import { SelecteurLangue } from "@/app/selecteur-langue";
 import { AppPreferences } from "./app-preferences";
+import { attestAge18 } from "@/app/actions";
 
 export default async function ProfilePage() {
   const supabase = await supabaseServer();
@@ -18,6 +19,11 @@ export default async function ProfilePage() {
   const { data: signed } = profile?.avatar_path
     ? await supabase.storage.from("avatars").createSignedUrl(profile.avatar_path, 3600)
     : { data: null };
+  const { data: attestation } = await supabase
+    .from("age_attestations")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
   const m = await getMessages();
 
   return (
@@ -54,6 +60,27 @@ export default async function ProfilePage() {
         >
           {m.distance.gerer}
         </Link>
+      </section>
+      <section className="glass-card flex flex-col gap-3 p-5" aria-labelledby="profile-age-title">
+        <div>
+          <h2 id="profile-age-title" className="text-lg font-bold text-white">{m.age.titre}</h2>
+          <p className="mt-1 text-sm text-white/60">{attestation ? m.age.attestee : m.age.profilAide}</p>
+        </div>
+        {!attestation && (
+          <form action={attestAge18}>
+            <button className="btn-paradise min-h-11 rounded-full px-5 py-2.5 text-sm font-semibold">
+              {m.age.attester}
+            </button>
+          </form>
+        )}
+      </section>
+      <section className="glass-card flex flex-col gap-3 p-5" aria-labelledby="profile-safety-title">
+        <div><h2 id="profile-safety-title" className="text-lg font-bold text-white">Sécurité du compte</h2><p className="mt-1 text-sm text-white/60">Consulte tes mesures de modération et dépose un appel si nécessaire.</p></div>
+        <Link href="/profile/safety" className="btn-paradise inline-flex min-h-11 items-center justify-center self-start rounded-full px-5 py-2.5 text-sm font-semibold">Voir mes mesures</Link>
+      </section>
+      <section className="glass-card flex flex-col gap-3 p-5" aria-labelledby="profile-account-title">
+        <div><h2 id="profile-account-title" className="text-lg font-bold text-white">Compte et données</h2><p className="mt-1 text-sm text-white/60">Exporte tes données, gère les sessions ou planifie une suppression réversible.</p></div>
+        <Link href="/profile/account" className="btn-paradise inline-flex min-h-11 items-center justify-center self-start rounded-full px-5 py-2.5 text-sm font-semibold">Gérer mon compte</Link>
       </section>
       <AppPreferences />
     </main>

@@ -2,9 +2,7 @@
 
 ## Statut
 
-Proposé. 11 août 2026. Décideur : à nommer. Les durées de conservation et
-l'effacement des comptes relèvent du produit et du juridique. Seul le point
-sur `profiles.lang` / `profiles.locale` relève de l'équipe technique.
+remplacé — voir [ADR-0013 — Cycle de compte et rétention](ADR-0013-cycle-compte-et-retention.md).
 
 ## Contexte
 

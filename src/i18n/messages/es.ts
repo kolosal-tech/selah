@@ -47,6 +47,16 @@ export const es: Messages = {
       not_interested: "Menos presente",
     },
   },
+  age: {
+    titre: "Declaración 18+",
+    inscription: "Declaro que tengo al menos 18 años.",
+    inscriptionAide: "Selah no pide fecha de nacimiento, documento ni edad numérica.",
+    erreurInscription: "Debes declarar que tienes al menos 18 años para crear una cuenta.",
+    profilAide: "La mentoría permanece cerrada hasta registrar esta declaración.",
+    attester: "Declarar que tengo 18 años o más",
+    attestee: "Declaración 18+ registrada.",
+    mentoratFerme: "La mentoría está cerrada hasta completar la declaración 18+.",
+  },
   types: {
     temoignage: "Testimonio",
     exhortation: "Exhortación",

@@ -2,10 +2,7 @@
 
 ## Statut
 
-Bloqué — décision non technique. 11 août 2026. Décideur : à nommer.
-
-Le socle technique existe. La politique de modération — motifs, délais,
-sanctions, appels — relève du produit et du juridique, et n'est pas prise.
+remplacé — voir [ADR-0012 — Modération protectrice](ADR-0012-moderation-protection.md).
 
 ## Contexte
 

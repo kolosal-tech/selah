@@ -47,6 +47,16 @@ export const he: Messages = {
       not_interested: "מוצג פחות",
     },
   },
+  age: {
+    titre: "הצהרת 18+",
+    inscription: "אני מאשר/ת שאני בן/בת 18 לפחות.",
+    inscriptionAide: "Selah אינו מבקש תאריך לידה, מסמך או גיל מספרי.",
+    erreurInscription: "כדי ליצור חשבון יש לאשר גיל 18 לפחות.",
+    profilAide: "החניכה נשארת סגורה עד שהצהרה זו נשמרת.",
+    attester: "לאשר שאני בן/בת 18 ומעלה",
+    attestee: "הצהרת 18+ נשמרה.",
+    mentoratFerme: "החניכה סגורה עד להשלמת הצהרת 18+.",
+  },
   types: {
     temoignage: "עדות",
     exhortation: "עידוד",

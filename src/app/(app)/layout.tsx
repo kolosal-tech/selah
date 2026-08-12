@@ -8,6 +8,9 @@ import { SelecteurLangue } from "../selecteur-langue";
 import { Flame, LogOut, UserCircle } from "lucide-react";
 import { getMessages } from "@/i18n/server";
 import { recordProductEventAfter } from "@/lib/analytics/record";
+import { headers } from "next/headers";
+import { recordAccountSessionAfter } from "@/lib/account-session";
+import { isEnabled } from "@/lib/flags";
 
 export default async function AppLayout({
   children,
@@ -20,17 +23,23 @@ export default async function AppLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username, streak_days, sabbath_until")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: attestation }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("username, streak_days, sabbath_until")
+      .eq("id", user.id)
+      .single(),
+    supabase.from("age_attestations").select("user_id").eq("user_id", user.id).maybeSingle(),
+  ]);
+  const mentorshipVisible = isEnabled("mentorship") && Boolean(attestation);
 
   if (isSabbathActive(profile?.sabbath_until)) redirect("/sabbath");
 
   // Visite du jour : une navigation suffit à compter un compte actif, sans
   // attendre qu'il publie. L'index unique en base absorbe les répétitions.
   recordProductEventAfter(supabase, { name: "session_start", surface: "session" });
+  const requestHeaders = await headers();
+  recordAccountSessionAfter(supabase, requestHeaders.get("user-agent"));
 
   const m = await getMessages();
 
@@ -65,10 +74,10 @@ export default async function AppLayout({
       </header>
 
       {/* Retour contextuel : uniquement hors des cinq onglets principaux */}
-      <BarreRetour />
+      <BarreRetour mentorshipVisible={mentorshipVisible} />
 
       {/* Navigation flottante + chips */}
-      <FloatingPillNav />
+      <FloatingPillNav mentorshipVisible={mentorshipVisible} />
 
       {/* Contenu — entrée en fondu montant à chaque navigation */}
       <div className="flex-1 animate-arrive">{children}</div>

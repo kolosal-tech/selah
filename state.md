@@ -36,6 +36,52 @@ stables jusqu'à au moins 100 utilisateurs virtuels simultanés.
 
 ## Cycle courant
 
+Cycle 22 — reprise autonome de la vague 1. Implémentation locale stable,
+préproduction distante en cours le 12 août 2026.
+
+Arbitrages. L'historique détaillé de décision n'a pas été retrouvé — l'index
+de connaissances répond exactement « je n'ai pas cette information en base ».
+Les trois choix protecteurs sont donc explicitement des hypothèses dans les
+ADR-0011 à ADR-0013 : admission 18+ par attestation explicite et versionnée,
+sanctions humaines limitées à l'avertissement ou à la restriction de mentorat
+sept/trente jours avec appel distinct sous trente jours, export JSON et
+suppression différée quatorze jours. Les anciens ADR sont remplacés, pas
+réécrits comme s'ils étaient des décisions récupérées.
+
+Modération. Chaque report a son dossier, chaque sanction ou appel est tracé
+dans le journal append-only. L'admin peut trier, avertir/restreindre et
+examiner les appels dans `/moderation`; le membre voit ses mesures et dépose
+une déclaration de vingt à deux mille caractères dans `/profile/safety`. Une
+note de même taille motive obligatoirement la décision. L'incident de
+suppression de compte a été traité avant livraison : les références humaines
+de dossier, sanction et appel sont maintenant mises à NULL, donc le fait reste
+conservé sans identifiant après la suppression. La RPC qui révélait la
+restriction de mentorat d'un tiers a été retirée du schéma public.
+
+Compte et âge. `/profile/account` offre un export propriétaire, les sessions
+réduites à navigateur/appareil, la révocation locale/autres/toutes sessions,
+et une demande de suppression annulable pendant quatorze jours. Le cron prévu
+retire d'abord les objets des buckets `avatars` et `videos` via Storage API,
+puis l'utilisateur Auth; un reçu sans UUID reste seul après purge. L'interface
+et la RLS ferment le mentorat par défaut : la case 18+ est non précochée à
+l'inscription, aucune date de naissance, âge numérique ou pièce n'est stocké,
+et les comptes existants doivent s'attester volontairement avant de voir ou
+créer un mentorat.
+
+Preuves locales du cycle. `pnpm install --frozen-lockfile` : Already up to
+date ; `pnpm exec next typegen`, lint et TypeScript : code 0 ; Vitest : 27
+fichiers / 198 tests ; `test:rls` : `RLS baseline: OK` ; `test:schema` :
+`Schema reconstruction: OK`, avec les fixtures modération, âge/mentorat et
+cycle compte ; build : 28 routes dont export, cron, safety et account ;
+Playwright public : 6/6 Chromium + Pixel 7. L'évaluation mécanique du lot de
+modération est `ACCEPTE` (citations et valeurs 1, hallucination 0).
+
+Limites avant ouverture distante. Les migrations ne sont pas encore appliquées
+à Supabase, la clé service et `CRON_SECRET` ne sont pas encore configurés sur
+Vercel, et `SELAH_FLAG_MENTORSHIP` reste volontairement absent donc fermé.
+Il ne faut pas annoncer export, suppression, mentorat attesté ou cron comme
+disponibles en production avant ces trois preuves et le tir QA jetable.
+
 Cycle 21 — fermeture du sous-ensemble autonome de la vague 1. Terminé le
 11 août 2026.
 

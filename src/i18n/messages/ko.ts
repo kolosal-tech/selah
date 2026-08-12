@@ -47,6 +47,16 @@ export const ko: Messages = {
       not_interested: "덜 표시됨",
     },
   },
+  age: {
+    titre: "18세 이상 확인",
+    inscription: "본인은 18세 이상임을 확인합니다.",
+    inscriptionAide: "Selah는 생년월일, 신분증 또는 숫자로 된 나이를 요구하지 않습니다.",
+    erreurInscription: "계정을 만들려면 18세 이상임을 확인해야 합니다.",
+    profilAide: "이 확인이 기록될 때까지 멘토링은 닫혀 있습니다.",
+    attester: "18세 이상임을 확인합니다",
+    attestee: "18세 이상 확인이 기록되었습니다.",
+    mentoratFerme: "18세 이상 확인을 완료할 때까지 멘토링은 닫혀 있습니다.",
+  },
   types: {
     temoignage: "간증",
     exhortation: "권면",

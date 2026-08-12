@@ -20,9 +20,9 @@ export const FEATURE_FLAGS = [
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[number];
 
-/** Défauts identiques aux constantes qu'ils remplacent : aucun changement de comportement. */
+/** ADR-0011 ferme le mentorat tant qu'une valeur explicite n'est pas posée. */
 const DEFAUTS: Record<FeatureFlag, boolean> = {
-  mentorship: true,
+  mentorship: false,
   video_publication: true,
   analytics: false,
   analytics_anonymous: false,

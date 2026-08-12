@@ -20,6 +20,7 @@ export default async function Signup({
   const erreurs: Record<string, string> = {
     charte: m.auth.erreurCharte,
     nom: m.auth.erreurUsername,
+    age: m.age.erreurInscription,
   };
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-sm flex-col justify-start gap-6 overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] scroll-py-4 sm:justify-center sm:py-6">
@@ -79,6 +80,13 @@ export default async function Signup({
           <span>
             <strong className="text-amber-200">{m.auth.charteTitre}</strong> :{" "}
             {m.auth.charteTexte}
+          </span>
+        </label>
+        <label className="flex items-start gap-2 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-sm text-white/80">
+          <input type="checkbox" name="age_attestation" required className="mt-1 accent-sky-400" />
+          <span>
+            <strong className="text-sky-200">{m.age.titre}</strong> : {m.age.inscription}
+            <span className="mt-1 block text-xs text-white/60">{m.age.inscriptionAide}</span>
           </span>
         </label>
         <button className="btn-paradise min-h-11 rounded-xl p-3 font-bold transition hover:scale-[1.02]">

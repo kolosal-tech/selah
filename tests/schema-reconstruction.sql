@@ -14,6 +14,10 @@ create function auth.uid() returns uuid
 language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
 $$;
+create function auth.jwt() returns jsonb
+language sql stable as $$
+  select coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
+$$;
 
 create schema storage;
 create function storage.foldername(name text) returns text[]
@@ -72,6 +76,9 @@ create publication supabase_realtime;
 \i /workspace/supabase/migrations/20260811150000_anonymous_events_and_vitals.sql
 \i /workspace/supabase/migrations/20260811160000_anonymous_rpc_invoker.sql
 \i /workspace/supabase/migrations/20260811170000_blocages_et_taxonomie.sql
+\i /workspace/supabase/migrations/20260811200000_moderation_cases_appeals.sql
+\i /workspace/supabase/migrations/20260811210000_account_lifecycle.sql
+\i /workspace/supabase/migrations/20260811220000_age_attestation_mentorat.sql
 
 do $$
 begin

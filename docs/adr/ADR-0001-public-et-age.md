@@ -2,9 +2,7 @@
 
 ## Statut
 
-bloqué — décision non technique. 11 août 2026. Décideur : à nommer
-(produit et juridique). L'équipe technique n'a pas qualité pour trancher
-l'âge d'accès à un service en ligne.
+remplacé — voir [ADR-0011 — Public, âge et mentorat protecteur](ADR-0011-public-et-age-protection.md).
 
 ## Contexte
 

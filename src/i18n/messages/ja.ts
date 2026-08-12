@@ -47,6 +47,16 @@ export const ja: Messages = {
       not_interested: "表示を減らす",
     },
   },
+  age: {
+    titre: "18歳以上の確認",
+    inscription: "私は18歳以上であることを確認します。",
+    inscriptionAide: "Selah は生年月日、身分証明書、数値の年齢を求めません。",
+    erreurInscription: "アカウント作成には18歳以上であることの確認が必要です。",
+    profilAide: "この確認が記録されるまでメンタリングは利用できません。",
+    attester: "18歳以上であることを確認する",
+    attestee: "18歳以上の確認を記録しました。",
+    mentoratFerme: "18歳以上の確認が完了するまでメンタリングは利用できません。",
+  },
   types: {
     temoignage: "証し",
     exhortation: "勧め",

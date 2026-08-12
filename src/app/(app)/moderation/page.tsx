@@ -5,6 +5,8 @@ import { ShieldCheck, Flag, EyeOff } from "lucide-react";
 import { getLocale, getMessages } from "@/i18n/server";
 import { pseudo } from "@/i18n/config";
 import type { ReportCategory } from "@/lib/moderation";
+import { CaseActions } from "./case-actions";
+import { AppealReview } from "./appeal-review";
 
 type LigneSignalement = {
   id: string;
@@ -22,6 +24,8 @@ type LigneSignalement = {
     profiles: { username: string } | null;
   } | null;
 };
+type Dossier = { id: string; report_id: string; status: "open" | "triaged" | "closed"; priority: number };
+type AppealPending = { id: string; sanction_id: string; statement: string; submitted_at: string };
 
 /** File de modération des vidéos. Réservée aux modérateurs et admins ;
  *  la RLS côté base fait autorité, la redirection évite juste une page vide. */
@@ -44,7 +48,7 @@ export default async function Moderation() {
 
   const base = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/`;
 
-  const [{ data: signalements }, { data: masquees }] = await Promise.all([
+  const [{ data: signalements }, { data: masquees }, { data: dossiers }, { data: appeals }] = await Promise.all([
     supabase
       .from("reports")
       .select(
@@ -67,12 +71,17 @@ export default async function Moderation() {
       .eq("hidden", true)
       .order("created_at", { ascending: false })
       .limit(50),
+    supabase.from("moderation_cases").select("id, report_id, status, priority").order("created_at", { ascending: false }).limit(50),
+    profile.role === "admin"
+      ? supabase.from("moderation_appeals").select("id, sanction_id, statement, submitted_at").eq("status", "pending").order("submitted_at", { ascending: true }).limit(50)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const lignes = (signalements ?? []) as unknown as LigneSignalement[];
   const videosMasquees = (masquees ?? []) as unknown as NonNullable<
     LigneSignalement["video"]
   >[];
+  const dossierParSignalement = new Map((dossiers ?? []).map((dossier) => [dossier.report_id, dossier as Dossier]));
 
   return (
     <main className="flex flex-col gap-8 pb-10">
@@ -108,8 +117,9 @@ export default async function Moderation() {
         )}
 
         {lignes.map(
-          (s) =>
-            s.video && (
+          (s) => {
+            const dossier = dossierParSignalement.get(s.id);
+            return s.video && (
               <article key={s.id} className="glass-card flex gap-4 p-4">
                 <video
                   src={base + s.video.storage_path}
@@ -149,18 +159,23 @@ export default async function Moderation() {
                     <br />
                     {m.moderation.motif(m.video.motifs[s.category])}
                   </p>
+                  {dossier && <p className="text-xs text-amber-200">Dossier #{dossier.id.slice(0, 8)} · {dossier.status} · priorité {dossier.priority}</p>}
                   <div className="mt-auto pt-2">
                     <BoutonsModeration
                       videoId={s.video.id}
                       reportId={s.id}
                       hidden={s.video.hidden}
                     />
+                    {dossier && <CaseActions caseId={dossier.id} category={s.category} isAdmin={profile.role === "admin"} />}
                   </div>
                 </div>
               </article>
-            ),
+            );
+          },
         )}
       </section>
+
+      {profile.role === "admin" && <section className="flex flex-col gap-4"><h2 className="text-lg font-bold text-white">Appels en attente</h2>{(appeals ?? []).length === 0 ? <p className="text-sm text-white/50">Aucun appel en attente.</p> : (appeals as AppealPending[]).map((appeal) => <article key={appeal.id} className="glass-card p-4"><p className="text-xs text-white/50">Appel #{appeal.id.slice(0, 8)}</p><AppealReview appealId={appeal.id} statement={appeal.statement} /></article>)}</section>}
 
       <section className="flex flex-col gap-4">
         <h2 className="flex items-center gap-2 text-lg font-bold text-white">

@@ -47,6 +47,16 @@ export const zh: Messages = {
       not_interested: "减少显示",
     },
   },
+  age: {
+    titre: "18+ 声明",
+    inscription: "我确认自己已满 18 岁。",
+    inscriptionAide: "Selah 不要求出生日期、证件或数字年龄。",
+    erreurInscription: "创建账户前必须确认已满 18 岁。",
+    profilAide: "在记录此声明前，导师关系保持关闭。",
+    attester: "确认我已满 18 岁",
+    attestee: "18+ 声明已记录。",
+    mentoratFerme: "完成 18+ 声明前，导师关系处于关闭状态。",
+  },
   types: {
     temoignage: "见证",
     exhortation: "劝勉",

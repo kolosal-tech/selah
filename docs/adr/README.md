@@ -37,9 +37,9 @@ La liste est fermée. Aucun autre statut n'est admis.
 
 | Numéro | Sujet | Statut |
 |---|---|---|
-| [ADR-0001](ADR-0001-public-et-age.md) | Public admis et âge minimal | bloqué — décision non technique |
-| [ADR-0002](ADR-0002-moderation.md) | Modération : taxonomie, rôles, délais, sanctions et appels | bloqué — décision non technique |
-| [ADR-0003](ADR-0003-retention-donnees.md) | Rétention des données et effacement | proposé |
+| [ADR-0001](ADR-0001-public-et-age.md) | Public admis et âge minimal | remplacé — ADR-0011 |
+| [ADR-0002](ADR-0002-moderation.md) | Modération : taxonomie, rôles, délais, sanctions et appels | remplacé — ADR-0012 |
+| [ADR-0003](ADR-0003-retention-donnees.md) | Rétention des données et effacement | remplacé — ADR-0013 |
 | [ADR-0004](ADR-0004-droits-media.md) | Droits média : provenance, consentement image et voix, retrait | bloqué — décision non technique |
 | [ADR-0005](ADR-0005-fournisseurs.md) | Fournisseurs : critères d'admission et sortie de secours | accepté (grille) — choix bloqués |
 | [ADR-0006](ADR-0006-paiement.md) | Paiement et entitlements | bloqué — décision non technique |
@@ -47,6 +47,9 @@ La liste est fermée. Aucun autre statut n'est admis.
 | [ADR-0008](ADR-0008-analytique-produit.md) | Analytique produit : `product_events`, RLS deny-all et RPC d'écriture | accepté |
 | [ADR-0009](ADR-0009-feature-flags.md) | Feature flags par variable d'environnement | accepté |
 | [ADR-0010](ADR-0010-voie-anonyme-et-rum.md) | Voie anonyme et métriques terrain sans clé `service_role` | accepté |
+| [ADR-0011](ADR-0011-public-et-age-protection.md) | Public, âge et mentorat protecteur | accepté |
+| [ADR-0012](ADR-0012-moderation-protection.md) | Modération protectrice | accepté |
+| [ADR-0013](ADR-0013-cycle-compte-et-retention.md) | Cycle de compte et rétention | accepté |
 
 ADR-0005 est accepté en tant que grille : la méthode d'évaluation fait
 autorité. Les choix qu'elle sert à instruire restent bloqués tant que les

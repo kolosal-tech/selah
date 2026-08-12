@@ -172,12 +172,12 @@ describe("baseline de sécurité", () => {
     expect(migration).toContain('create policy "videos mise à jour de ses fichiers"');
     expect(migration).toContain('create policy "proposer mentorat"');
     expect(migration).toContain("grant insert (author_id, storage_path, thumb_path, caption, verse_ref, type, duration_s)");
-    // Les deux constantes historiques sont devenues des flags typés, avec le
-    // même défaut ouvert : la réactivation de `0016` reste vraie côté serveur.
+    // ADR-0011 ferme désormais le mentorat sans valeur explicite, tandis que
+    // la vidéo conserve son défaut historique ouvert.
     const flags = await source("src/lib/flags.ts");
     expect(actions).toContain('isEnabled("mentorship")');
     expect(actions).toContain('isEnabled("video_publication")');
-    expect(flags).toContain("mentorship: true");
+    expect(flags).toContain("mentorship: false");
     expect(flags).toContain("video_publication: true");
     expect(actions).toContain('rateLimit(supabase, "follow")');
     expect(mentorship).toContain("offerMentorship");

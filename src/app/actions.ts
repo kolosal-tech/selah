@@ -78,6 +78,9 @@ export async function signup(formData: FormData) {
   if (!formData.get("charte")) {
     redirect("/signup?error=charte");
   }
+  if (!formData.get("age_attestation")) {
+    redirect("/signup?error=age");
+  }
   if (!nomAfficheValide(nom)) {
     redirect("/signup?error=nom");
   }
@@ -98,7 +101,7 @@ export async function signup(formData: FormData) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { username, display_name: nom, country, locale } },
+    options: { data: { username, display_name: nom, country, locale, age_attested: true } },
   });
   if (error || !data.user) {
     recordAnonymousEventAfter(supabase, { name: "signup_failed", surface: "auth" });
@@ -227,7 +230,8 @@ export async function login(formData: FormData) {
 
 export async function logout() {
   const supabase = await supabaseServer();
-  await supabase.auth.signOut();
+  // Un geste de sortie courant ne déconnecte jamais les autres appareils.
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/");
 }
 
@@ -331,6 +335,17 @@ export async function endSabbath() {
     .eq("id", user.id);
   revalidatePath("/", "layout");
   redirect("/feed");
+}
+
+/** Attestation ADR-0011 : aucun champ client n'est transmis à la RPC. */
+export async function attestAge18(_formData: FormData) {
+  void _formData;
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.rpc("attest_age_18");
+  if (error || data !== true) return;
+  revalidatePath("/profile");
+  revalidatePath("/mentorship");
+  revalidatePath("/", "layout");
 }
 
 export async function offerMentorship(formData: FormData) {

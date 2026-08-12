@@ -47,6 +47,16 @@ export const ar: Messages = {
       not_interested: "أقل ظهورًا",
     },
   },
+  age: {
+    titre: "إقرار 18+",
+    inscription: "أقر بأن عمري 18 عامًا أو أكثر.",
+    inscriptionAide: "لا يطلب Selah تاريخ الميلاد أو وثيقة أو عمرًا رقميًا.",
+    erreurInscription: "يجب الإقرار بأن عمرك 18 عامًا أو أكثر لإنشاء حساب.",
+    profilAide: "يبقى الإرشاد مغلقًا حتى تسجيل هذا الإقرار.",
+    attester: "الإقرار بأن عمري 18 عامًا أو أكثر",
+    attestee: "تم تسجيل إقرار 18+.",
+    mentoratFerme: "الإرشاد مغلق حتى تكمل إقرار 18+.",
+  },
   types: {
     temoignage: "شهادة",
     exhortation: "وعظ",
