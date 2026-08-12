@@ -1,5 +1,14 @@
 \set ON_ERROR_STOP on
 
+do $$ begin
+  if has_function_privilege('anon', 'public.triage_moderation_case(uuid, public.moderation_case_status, smallint)', 'execute')
+    or has_function_privilege('anon', 'public.issue_moderation_sanction(uuid, public.moderation_sanction_kind, integer, public.report_category)', 'execute')
+    or has_function_privilege('anon', 'public.submit_moderation_appeal(uuid, text)', 'execute')
+    or has_function_privilege('anon', 'public.review_moderation_appeal(uuid, public.moderation_appeal_status, text)', 'execute') then
+    raise exception 'RPC modération accessible anonymement';
+  end if;
+end $$;
+
 -- Dossier intercomptes ADR-0012 : 2=signaleur, 3=sujet, 4=modérateur,
 -- 5=admin émetteur, 6=admin examinateur. Les comptes 2 à 5 existent déjà.
 reset role;

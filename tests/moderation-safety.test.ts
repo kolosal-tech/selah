@@ -26,6 +26,13 @@ describe("ADR-0012 moderation safety contract", () => {
     expect(migration).not.toContain("public.is_mentorship_restricted");
   });
 
+  it("revokes anonymous execution of moderation wrappers", () => {
+    const grants = read("supabase/migrations/20260811230000_moderation_public_rpc_grants.sql");
+    expect(grants).toContain("revoke all on function public.triage_moderation_case");
+    expect(grants).toContain("revoke all on function public.review_moderation_appeal");
+    expect(grants).toContain("to authenticated");
+  });
+
   it("provides an accessible safety screen and a queue with explicit admin limits", () => {
     const safety = read("src/app/(app)/profile/safety/page.tsx");
     const appeal = read("src/app/(app)/profile/safety/appeal-button.tsx");
