@@ -76,11 +76,29 @@ cycle compte ; build : 28 routes dont export, cron, safety et account ;
 Playwright public : 6/6 Chromium + Pixel 7. L'évaluation mécanique du lot de
 modération est `ACCEPTE` (citations et valeurs 1, hallucination 0).
 
-Limites avant ouverture distante. Les migrations ne sont pas encore appliquées
-à Supabase, la clé service et `CRON_SECRET` ne sont pas encore configurés sur
-Vercel, et `SELAH_FLAG_MENTORSHIP` reste volontairement absent donc fermé.
-Il ne faut pas annoncer export, suppression, mentorat attesté ou cron comme
-disponibles en production avant ces trois preuves et le tir QA jetable.
+Preuves distantes. L'historique Supabase contenait quatre identifiants courts
+inconnus du checkout, mais le diff de schéma montrait que les objets des vagues
+antérieures existaient déjà. Les quatre lignes ont donc été marquées revertées
+et les quatre migrations canoniques correspondantes marquées appliquées, sans
+modifier de donnée ; `db push` a ensuite appliqué `20260811200000` à
+`20260811230000`. La liste liée confirme chaque version locale et distante.
+Le dernier correctif révoque `EXECUTE` anon sur toutes les RPC de modération :
+un POST REST anonyme réel répond 401. Le compte QA jetable a créé une demande,
+l'a lue uniquement sous sa session, l'a annulée puis a été supprimé via Auth :
+`QA account lifecycle: OK`, sans résidu. Les nouvelles variables Vercel sont
+présentes chiffrées seulement (`SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, flag
+mentorat à 1). Le déploiement `dpl_GBj2mdyeeu4ncbE9aZKGuC1crq8k` est READY sur
+`https://selah-wheat.vercel.app`; la QA publique est 6/6 Chromium + Pixel 7,
+et les endpoints export/Cron renvoient 401 sans session/secret. Les logs Vercel
+error et warning ne retournent aucune entrée.
+
+Incident de procédure. Une commande d'inventaire de clés a affiché une clé de
+service dans le terminal au lieu de la garder masquée. Elle n'est ni écrite ni
+committée, et la valeur déployée est chiffrée ; sa rotation doit toutefois être
+planifiée avec les éventuels consommateurs externes avant toute invalidation.
+Le Cron lui-même n'a pas été tiré en production : son secret n'est pas relu,
+et l'exécution aurait supprimé un compte. Sa sécurité et le chemin réel sont
+prouvés localement, la demande/annulation par le tir QA distant.
 
 Cycle 21 — fermeture du sous-ensemble autonome de la vague 1. Terminé le
 11 août 2026.
