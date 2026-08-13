@@ -27,6 +27,18 @@ export default defineConfig({
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile-chrome", use: { ...devices["Pixel 7"] } },
+    // WebKit couvre Safari, seul moteur disponible sur iOS : un parcours qui
+    // n'y est jamais exercé est un parcours non testé pour une part réelle du
+    // public. Les permissions caméra/micro et les faux périphériques de flux
+    // sont propres à Chromium, d'où la surcharge locale.
+    {
+      name: "webkit",
+      use: {
+        ...devices["Desktop Safari"],
+        permissions: [],
+        launchOptions: {},
+      },
+    },
   ],
   webServer: isRemote
     ? undefined

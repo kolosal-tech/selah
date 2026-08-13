@@ -21,6 +21,7 @@ export default async function Signup({
     charte: m.auth.erreurCharte,
     nom: m.auth.erreurUsername,
     age: m.age.erreurInscription,
+    "trop-de-tentatives": m.auth.tropDeTentatives,
   };
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-sm flex-col justify-start gap-6 overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] scroll-py-4 sm:justify-center sm:py-6">

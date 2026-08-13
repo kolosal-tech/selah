@@ -13,9 +13,12 @@ import { VerticalFeed, type FeedVideo } from "./vertical-feed";
 export default async function Accueil({
   searchParams,
 }: {
-  searchParams: Promise<{ v?: string }>;
+  searchParams: Promise<{ v?: string; fil?: string }>;
 }) {
-  const { v: videoPartagee } = await searchParams;
+  const { v: videoPartagee, fil } = await searchParams;
+  // Toute valeur autre que "abonnements" (ou son absence) garde le
+  // comportement actuel : mode « Pour toi » inchangé.
+  const mode: "pourToi" | "abonnements" = fil === "abonnements" ? "abonnements" : "pourToi";
   const supabase = await supabaseServer();
   const {
     data: { user },
@@ -53,15 +56,23 @@ export default async function Accueil({
   // Classement « édifiant » : la vue calcule score (engagement pondéré,
   // amorti par l'âge) et rang_auteur (diversité — pas d'empilement d'un
   // même auteur en tête). Tri (rang_auteur, score desc) = feed intercalé.
-  const { data: videos, error } = await supabase
-    .from("videos_feed")
-    .select("*")
-    .order("rang_auteur", { ascending: true })
-    .order("score", { ascending: false })
-    .order("id", { ascending: true })
-    .limit(24);
-
-  let liste = (videos ?? []) as FeedVideo[];
+  // Mode abonnements : même tri, restreint aux auteurs suivis. Sans aucun
+  // suivi, la requête n'a rien à retourner : autant s'épargner l'aller-retour.
+  let error: { message: string } | null = null;
+  let liste: FeedVideo[] = [];
+  if (mode !== "abonnements" || suivis.length > 0) {
+    let requete = supabase
+      .from("videos_feed")
+      .select("*")
+      .order("rang_auteur", { ascending: true })
+      .order("score", { ascending: false })
+      .order("id", { ascending: true })
+      .limit(24);
+    if (mode === "abonnements") requete = requete.in("author_id", suivis);
+    const resultat = await requete;
+    error = resultat.error;
+    liste = (resultat.data ?? []) as FeedVideo[];
+  }
 
   // Lien de partage /?v=<id> : la vidéo visée passe en tête du feed.
   if (videoPartagee && /^[0-9a-f-]{36}$/i.test(videoPartagee)) {
@@ -123,6 +134,7 @@ export default async function Accueil({
       initialPrie={prie}
       initialSuivis={suivis}
       erreurInitiale={Boolean(error)}
+      mode={mode}
     />
   );
 }

@@ -1,7 +1,4 @@
-"use client";
-
-import { useMemo } from "react";
-import { useLocale, useMessages } from "@/i18n/client";
+import { getLocale, getMessages } from "@/i18n/server";
 
 /** Liste ISO 3166-1 alpha-2 des pays proposés à l'inscription. */
 const PAYS: readonly string[] = [
@@ -20,20 +17,29 @@ const PAYS: readonly string[] = [
 ];
 
 /**
- * Sélecteur de pays : noms localisés par Intl.DisplayNames (aucune liste de
- * noms à maintenir), trié dans l'ordre alphabétique de la langue courante,
- * pré-rempli avec le pays détecté par la géolocalisation IP.
+ * Sélecteur de pays : noms localisés par `Intl.DisplayNames` (aucune liste de
+ * noms à maintenir), triés dans l'ordre alphabétique de la langue courante et
+ * pré-remplis avec le pays détecté par la géolocalisation IP.
+ *
+ * Ce composant est rendu **côté serveur uniquement**, et ce n'est pas un
+ * détail de performance. `Intl.DisplayNames` et `localeCompare` s'appuient sur
+ * la table ICU du moteur : celle de Node ne coïncide pas avec celle de WebKit.
+ * Tant que la liste était calculée dans un composant client, Safari
+ * recalculait des libellés et un ordre différents de ceux rendus par le
+ * serveur, et React refusait l'hydratation de tout l'arbre (erreur #418) —
+ * défaut invisible sur Chromium, dont l'ICU s'aligne avec celle de Node.
+ *
+ * En rendant la liste sur le serveur, une seule table ICU fait autorité et le
+ * client n'a plus rien à recalculer.
  */
-export function ChampPays({ paysDetecte }: { paysDetecte: string | null }) {
-  const locale = useLocale();
-  const m = useMessages();
+export async function ChampPays({ paysDetecte }: { paysDetecte: string | null }) {
+  const locale = await getLocale();
+  const m = await getMessages();
 
-  const options = useMemo(() => {
-    const noms = new Intl.DisplayNames([locale], { type: "region" });
-    return PAYS.map((code) => ({ code, nom: noms.of(code) ?? code })).sort((a, b) =>
-      a.nom.localeCompare(b.nom, locale),
-    );
-  }, [locale]);
+  const noms = new Intl.DisplayNames([locale], { type: "region" });
+  const options = PAYS.map((code) => ({ code, nom: noms.of(code) ?? code })).sort(
+    (a, b) => a.nom.localeCompare(b.nom, locale),
+  );
 
   const defaut =
     paysDetecte && PAYS.includes(paysDetecte.toUpperCase())

@@ -8,6 +8,7 @@ import {
   motsDePasseIdentiques,
   urlCallbackReinitialisation,
 } from "@/lib/auth-password";
+import { consumeAuthAttempt } from "@/lib/auth-throttle";
 
 export async function demanderReinitialisation(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
@@ -24,6 +25,12 @@ export async function demanderReinitialisation(formData: FormData) {
   let acceptee = false;
   try {
     const supabase = await supabaseServer();
+    // Le fournisseur d'e-mails intégré plafonne l'envoi pour tout le projet :
+    // sans frein local, quelques demandes répétées privent tout le monde de
+    // réinitialisation. C'est l'incident constaté le 13 août 2026.
+    if (!(await consumeAuthAttempt(supabase, "password_reset"))) {
+      redirect("/forgot-password?error=trop-de-tentatives");
+    }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,
     });

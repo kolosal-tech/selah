@@ -13,6 +13,7 @@ export default async function Login({
   const { error, info } = await searchParams;
   const m = await getMessages();
   const identifiantsInvalides = error === "invalid-credentials";
+  const tropDeTentatives = error === "trop-de-tentatives";
   return (
     <main
       data-load-marker="selah-public-login-v1"
@@ -33,6 +34,11 @@ export default async function Login({
       {identifiantsInvalides && (
         <p className="rounded-xl border border-rose-500/30 bg-rose-500/15 p-3 text-sm text-rose-300">
           {m.auth.identifiantsInvalides}
+        </p>
+      )}
+      {tropDeTentatives && (
+        <p className="rounded-xl border border-amber-500/30 bg-amber-500/15 p-3 text-sm text-amber-100">
+          {m.auth.tropDeTentatives}
         </p>
       )}
       {identifiantsInvalides && (

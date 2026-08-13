@@ -15,6 +15,7 @@ import {
 import { isEnabled } from "@/lib/flags";
 import { recordProductEventAfter } from "@/lib/analytics/record";
 import { recordAnonymousEventAfter } from "@/lib/analytics/anonymous";
+import { consumeAuthAttempt } from "@/lib/auth-throttle";
 import {
   estCategorieSignalement,
   estGesteBlocage,
@@ -98,6 +99,12 @@ export async function signup(formData: FormData) {
     sameSite: "lax",
   });
   const supabase = await supabaseServer();
+  // L'inscription consomme un quota d'e-mails partagé par tout le projet :
+  // le frein protège la disponibilité du parcours pour les autres.
+  if (!(await consumeAuthAttempt(supabase, "signup"))) {
+    recordAnonymousEventAfter(supabase, { name: "signup_failed", surface: "auth" });
+    redirect("/signup?error=trop-de-tentatives");
+  }
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -213,6 +220,12 @@ export async function removeProfileAvatar() {
 
 export async function login(formData: FormData) {
   const supabase = await supabaseServer();
+  // Frein d'entrée avant tout appel au fournisseur : une énumération de mots
+  // de passe ne doit pas être limitée seulement par la bande passante.
+  if (!(await consumeAuthAttempt(supabase, "login"))) {
+    recordAnonymousEventAfter(supabase, { name: "login_failed", surface: "auth" });
+    redirect("/login?error=trop-de-tentatives");
+  }
   const { error } = await supabase.auth.signInWithPassword({
     email: String(formData.get("email") ?? "").trim(),
     password: String(formData.get("password") ?? ""),

@@ -50,6 +50,7 @@ La liste est fermée. Aucun autre statut n'est admis.
 | [ADR-0011](ADR-0011-public-et-age-protection.md) | Public, âge et mentorat protecteur | accepté |
 | [ADR-0012](ADR-0012-moderation-protection.md) | Modération protectrice | accepté |
 | [ADR-0013](ADR-0013-cycle-compte-et-retention.md) | Cycle de compte et rétention | accepté |
+| [ADR-0014](ADR-0014-frein-entree-auth.md) | Frein d'entrée sur les parcours non authentifiés | accepté |
 
 ADR-0005 est accepté en tant que grille : la méthode d'évaluation fait
 autorité. Les choix qu'elle sert à instruire restent bloqués tant que les

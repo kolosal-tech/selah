@@ -36,6 +36,9 @@ docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
   < tests/anonymous-events-rls.sql >/dev/null
 
 docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+  < tests/auth-throttle-rls.sql >/dev/null
+
+docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
   < tests/blocks-rls.sql >/dev/null
 
 docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \

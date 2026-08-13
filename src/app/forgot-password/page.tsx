@@ -15,6 +15,7 @@ export default async function ForgotPassword({
     email: m.auth.emailInvalide,
     service: m.auth.demandeReinitialisationErreur,
     link: m.auth.lienReinitialisationInvalide,
+    "trop-de-tentatives": m.auth.tropDeTentatives,
   };
 
   return (

@@ -118,6 +118,7 @@ export function VerticalFeed({
   initialPrie = [],
   initialSuivis = [],
   erreurInitiale = false,
+  mode = "pourToi",
 }: {
   initialVideos: FeedVideo[];
   me: { id: string; username: string | null } | null;
@@ -125,6 +126,7 @@ export function VerticalFeed({
   initialPrie?: string[];
   initialSuivis?: string[];
   erreurInitiale?: boolean;
+  mode?: "pourToi" | "abonnements";
 }) {
   const router = useRouter();
   const m = useMessages();
@@ -174,6 +176,20 @@ export function VerticalFeed({
     authorId: string;
     entrees: { v: FeedVideo; i: number }[];
   } | null>(null);
+
+  // Le rendu serveur recalcule `initialVideos` à chaque bascule d'onglet
+  // (navigation vers `/?fil=abonnements` ou `/`) ; `useState(initialVideos)`
+  // n'étant lu qu'au montage, resynchroniser explicitement au changement de
+  // mode — sinon l'URL change sans que le fil affiché change.
+  const modeRef = useRef(mode);
+  useEffect(() => {
+    if (modeRef.current === mode) return;
+    modeRef.current = mode;
+    setVideos(initialVideos);
+    setFin(initialVideos.length < PAGE);
+    activeRef.current = 0;
+    setActive(0);
+  }, [mode, initialVideos]);
 
   async function signerMedias(elements: FeedVideo[]): Promise<FeedVideo[]> {
     const paths = [
@@ -290,14 +306,19 @@ export function VerticalFeed({
       chargementRef.current = false;
       return;
     }
-    supabaseBrowser()
+    let requete = supabaseBrowser()
       .from("videos_feed")
       .select("*")
       .order("rang_auteur", { ascending: true })
       .order("score", { ascending: false })
       .order("id", { ascending: true })
       .or(filter)
-      .limit(PAGE)
+      .limit(PAGE);
+    // Mode abonnements : la page suivante doit respecter le même filtre que
+    // le premier rendu serveur, sinon le défilement ramène des auteurs non
+    // suivis — la régression la plus coûteuse de ce lot.
+    if (mode === "abonnements") requete = requete.in("author_id", initialSuivis);
+    requete
       .then(async ({ data, error }) => {
         chargementRef.current = false;
         if (error) return; // on ne conclut pas « fin » : retentera au prochain passage
@@ -331,7 +352,7 @@ export function VerticalFeed({
           return [...prev, ...nouvelles.filter((v) => !vus.has(v.id))];
         });
       });
-  }, [active, videos, fin, locale]);
+  }, [active, videos, fin, locale, mode, initialSuivis]);
 
   // Flèches clavier.
   useEffect(() => {
@@ -677,55 +698,86 @@ export function VerticalFeed({
       className="fixed inset-0 overflow-hidden bg-black text-white"
     >
       {/* Barre haute */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent px-5 pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <Link href="/" className="pointer-events-auto flex items-center">
-          <MotSelah taille={38} />
-        </Link>
-        <div className="pointer-events-auto flex items-center gap-3 sm:gap-4">
-          <button
-            onClick={basculerSon}
-            aria-label={muted ? m.video.activerSon : m.video.couperSon}
-            aria-pressed={!muted}
-            title={muted ? m.video.activerSon : m.video.couperSon}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-black/60 backdrop-blur-xl transition hover:bg-white/15 sm:h-10 sm:w-10 ${
-              !muted && !paused
-                ? "border-white/25 text-white"
-                : "border-rose-400/70 text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.65)]"
-            }`}
-          >
-            {muted ? (
-              <VolumeX className="h-5 w-5 stroke-[2.5]" />
-            ) : (
-              <Volume2 className="h-5 w-5 stroke-[2.5]" />
-            )}
-          </button>
-          {me ? (
-            <Link
-              href="/videos"
-              aria-label={m.video.publierVideoAudio}
-              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-500 p-[1px] shadow-lg shadow-amber-500/20 transition hover:scale-105"
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-col gap-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent px-5 pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="pointer-events-auto flex items-center">
+            <MotSelah taille={38} />
+          </Link>
+          <div className="pointer-events-auto flex items-center gap-3 sm:gap-4">
+            <button
+              onClick={basculerSon}
+              aria-label={muted ? m.video.activerSon : m.video.couperSon}
+              aria-pressed={!muted}
+              title={muted ? m.video.activerSon : m.video.couperSon}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-black/60 backdrop-blur-xl transition hover:bg-white/15 sm:h-10 sm:w-10 ${
+                !muted && !paused
+                  ? "border-white/25 text-white"
+                  : "border-rose-400/70 text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.65)]"
+              }`}
             >
-              <span className="flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl">
-                <Camera className="h-4 w-4 text-amber-400" aria-hidden="true" />
-                <span>{m.commun.publier}</span>
-              </span>
-            </Link>
-          ) : (
-            <>
+              {muted ? (
+                <VolumeX className="h-5 w-5 stroke-[2.5]" />
+              ) : (
+                <Volume2 className="h-5 w-5 stroke-[2.5]" />
+              )}
+            </button>
+            {me ? (
               <Link
-                href="/login"
-                className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:bg-white/20"
+                href="/videos"
+                aria-label={m.video.publierVideoAudio}
+                className="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-500 p-[1px] shadow-lg shadow-amber-500/20 transition hover:scale-105"
               >
-                {m.auth.seConnecter}
+                <span className="flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl">
+                  <Camera className="h-4 w-4 text-amber-400" aria-hidden="true" />
+                  <span>{m.commun.publier}</span>
+                </span>
               </Link>
-              <Link
-                href="/signup"
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:bg-white/20"
+                >
+                  {m.auth.seConnecter}
+                </Link>
+                <Link
+                  href="/signup"
  className="btn-paradise rounded-full px-4 py-2 text-xs font-bold transition hover:scale-105"
-              >
-                {m.commun.rejoindre}
-              </Link>
-            </>
-          )}
+                >
+                  {m.commun.rejoindre}
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Onglets Pour toi / Abonnements : navigation serveur — le tri et le
+            filtre vivent dans page.tsx, pas de réimplémentation côté client. */}
+        <div className="pointer-events-auto flex justify-center">
+          <nav className="glass-pill flex items-center gap-1 rounded-full p-1">
+            <Link
+              href="/"
+              aria-current={mode === "pourToi" ? "page" : undefined}
+              className={`flex min-h-11 min-w-[92px] items-center justify-center rounded-full px-4 text-[13px] font-bold transition-all duration-200 ${
+                mode === "pourToi"
+                  ? "bg-white text-slate-950 shadow-lg"
+                  : "text-white/70 hover:text-white"
+              }`}
+            >
+              {m.video.filPourToi}
+            </Link>
+            <Link
+              href="/?fil=abonnements"
+              aria-current={mode === "abonnements" ? "page" : undefined}
+              className={`flex min-h-11 min-w-[92px] items-center justify-center rounded-full px-4 text-[13px] font-bold transition-all duration-200 ${
+                mode === "abonnements"
+                  ? "bg-white text-slate-950 shadow-lg"
+                  : "text-white/70 hover:text-white"
+              }`}
+            >
+              {m.video.filAbonnements}
+            </Link>
+          </nav>
         </div>
       </header>
 
@@ -1055,7 +1107,21 @@ export function VerticalFeed({
           </section>
         )}
 
-        {videos.length === 0 && !erreurInitiale && (
+        {videos.length === 0 && !erreurInitiale && mode === "abonnements" && (
+          <section className="flex h-full flex-col items-center justify-center gap-4 bg-slate-950 px-8 text-center">
+            <Sparkles className="h-12 w-12 animate-bounce text-amber-400" />
+            <p className="text-xl font-bold">{m.video.filAbonnementsVide}</p>
+            <p className="text-white/70">{m.video.filAbonnementsVideAide}</p>
+            <Link
+              href="/"
+ className="btn-paradise rounded-full px-8 py-3 font-semibold "
+            >
+              {m.video.filDecouvrir}
+            </Link>
+          </section>
+        )}
+
+        {videos.length === 0 && !erreurInitiale && mode !== "abonnements" && (
           <section className="flex h-full flex-col items-center justify-center gap-4 bg-slate-950 px-8 text-center">
             <Sparkles className="h-12 w-12 animate-bounce text-amber-400" />
             <p className="text-xl font-bold">{m.video.feedVide}</p>

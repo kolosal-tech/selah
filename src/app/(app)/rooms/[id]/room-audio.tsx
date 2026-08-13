@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Headphones, Mic, MicOff, ShieldCheck } from "lucide-react";
 import { useMessages } from "@/i18n/client";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { muteAllRoomAudio } from "../audio-actions";
+import { muteAllRoomAudio, recordRoomJoined } from "../audio-actions";
 
 type AudioState = "idle" | "connecting" | "listening" | "full" | "error" | "closed";
 type SignalKind = "offer" | "answer" | "ice";
@@ -181,7 +181,11 @@ export function RoomAudio({
     };
 
     const offerIfInitiator = async (peerId: string) => {
-      if (userId.localeCompare(peerId) >= 0) return;
+      // Comparaison d'octets, jamais `localeCompare` : la collation dépend de
+      // la table ICU du moteur. Deux pairs sur des navigateurs différents
+      // pourraient se croire tous deux initiateurs — ou aucun — et la salle
+      // resterait muette sans erreur visible.
+      if (userId >= peerId) return;
       const peer = ensurePeer(peerId);
       if (peer.offerSent || peer.connection.signalingState !== "stable") return;
       peer.offerSent = true;
@@ -327,6 +331,9 @@ export function RoomAudio({
             }
             joinedRef.current = true;
             setState("listening");
+            // La ligne de participation est écrite : l'entrée est acquise, pas
+            // seulement demandée. La mesure ne bloque pas la suite.
+            void recordRoomJoined();
             await refreshParticipants();
 
             const { data: pending } = await supabase

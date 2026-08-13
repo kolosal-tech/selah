@@ -80,6 +80,7 @@ create publication supabase_realtime;
 \i /workspace/supabase/migrations/20260811210000_account_lifecycle.sql
 \i /workspace/supabase/migrations/20260811220000_age_attestation_mentorat.sql
 \i /workspace/supabase/migrations/20260811230000_moderation_public_rpc_grants.sql
+\i /workspace/supabase/migrations/20260814100000_auth_throttle_et_room_joined.sql
 
 do $$
 begin

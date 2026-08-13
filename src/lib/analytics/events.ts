@@ -16,6 +16,7 @@ export const PRODUCT_EVENT_NAMES = [
   "first_publish",
   "first_prayer",
   "room_opened",
+  "room_joined",
   "action_refused",
 ] as const;
 

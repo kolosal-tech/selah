@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   PRODUCT_EVENT_NAMES,
@@ -7,13 +7,22 @@ import {
   PRODUCT_EVENT_SURFACES,
 } from "@/lib/analytics/events";
 
-const MIGRATION = readFileSync(
-  new URL(
-    "../supabase/migrations/20260811120000_product_analytics.sql",
-    import.meta.url,
-  ),
-  "utf8",
-);
+/**
+ * Un type énuméré n'est pas figé par sa migration de création : une valeur
+ * peut lui être ajoutée plus tard par `alter type ... add value`. Ne lire que
+ * la migration d'origine ferait échouer la parité à chaque extension, ou pire,
+ * la déclarerait vraie alors que la base a divergé.
+ */
+const MIGRATIONS = readdirSync(
+  new URL("../supabase/migrations/", import.meta.url),
+)
+  .filter((f) => f.endsWith(".sql"))
+  .sort()
+  .map((f) =>
+    readFileSync(new URL(`../supabase/migrations/${f}`, import.meta.url), "utf8"),
+  )
+  .join("\n");
+
 
 /**
  * Retire commentaires de bloc et de ligne. Ces tests cherchent des
@@ -30,9 +39,16 @@ function valeursEnum(nom: string): string[] {
   // la cible TypeScript du build ne permet pas dotAll.
   const bloc = new RegExp(
     `create type public\\.${nom} as enum \\(([^)]*)\\)`,
-  ).exec(MIGRATION);
-  if (!bloc) throw new Error(`type ${nom} absent de la migration`);
-  return [...bloc[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+  ).exec(MIGRATIONS);
+  if (!bloc) throw new Error(`type ${nom} absent des migrations`);
+  const valeurs = [...bloc[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+  // Puis les extensions ultérieures, dans leur ordre d'application.
+  const ajouts = new RegExp(
+    `alter type public\\.${nom} add value(?: if not exists)? '([a-z_]+)'`,
+    "g",
+  );
+  for (const ajout of MIGRATIONS.matchAll(ajouts)) valeurs.push(ajout[1]);
+  return valeurs;
 }
 
 describe("catalogue d'événements produit", () => {
