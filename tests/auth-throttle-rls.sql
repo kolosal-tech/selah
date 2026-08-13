@@ -83,13 +83,25 @@ end;
 $$;
 
 -- 4. Les portées ne se partagent pas leur compteur : une adresse bloquée sur
---    la réinitialisation doit pouvoir encore se connecter.
+--    la réinitialisation doit pouvoir encore se connecter. Le plafond de
+--    connexion est nettement plus haut, parce qu'un NAT partagé — une église
+--    connectée au même réseau — est le cas nominal, pas une attaque.
 do $$
+declare
+  i integer;
 begin
-  if not public.consume_auth_attempt(
+  for i in 1..30 loop
+    if not public.consume_auth_attempt(
+      'jeton-de-test-analytique', repeat('a', 64), 'login'
+    ) then
+      raise exception 'connexion % refusée avant la limite de 30', i;
+    end if;
+  end loop;
+
+  if public.consume_auth_attempt(
     'jeton-de-test-analytique', repeat('a', 64), 'login'
   ) then
-    raise exception 'la connexion hérite du compteur de réinitialisation';
+    raise exception 'trente et unième connexion acceptée malgré la limite';
   end if;
 end;
 $$;

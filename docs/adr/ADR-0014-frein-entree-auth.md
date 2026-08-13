@@ -56,18 +56,29 @@ l'authentification pendant un incident transformerait une gêne en
 indisponibilité totale. La RLS et Supabase Auth restent les garde-fous durs ;
 celui-ci est un amortisseur.
 
-Plafonds retenus : `login` douze tentatives par quart d'heure, `signup` cinq
-par heure, `password_reset` trois par heure. Ils arrêtent l'automatisation sans
-gêner la personne qui se trompe deux fois de mot de passe. Les deux derniers
-sont plus stricts parce qu'ils consomment le quota d'e-mails du projet.
+Plafonds retenus : `login` trente tentatives par quart d'heure, `signup` dix
+par heure, `password_reset` trois par heure. Un attaquant reste à deux essais
+par minute ; `password_reset` demeure strict parce que le fournisseur intégré
+plafonne lui-même à deux envois par heure pour tout le projet.
+
+Ces valeurs sont la **deuxième** calibration. La première — douze, cinq, trois
+— a été démentie le jour même de sa mise en service : le seul harnais QA, joué
+sur trois navigateurs depuis une machine unique, a franchi le plafond de
+connexion et s'est vu refuser l'entrée. Or une adresse partagée par une église
+entière connectée au même réseau lors d'une rencontre est un cas nominal de ce
+produit, pas une attaque. Un plafond qui gêne un développeur seul aurait fermé
+la porte à un groupe.
 
 ## Conséquences
 
 Un utilisateur derrière un NAT partagé — entreprise, université, opérateur
-mobile — partage son empreinte avec ses voisins. Le plafond `login` a été fixé
-à douze pour cette raison ; il reste possible qu'un usage collectif intense
-déclenche un refus temporaire. Le message d'erreur le dit et invite à
-réessayer, sans jamais indiquer si le compte existe.
+mobile, salle d'église — partage son empreinte avec ses voisins. C'est la
+conséquence structurante de ce choix, et la raison des plafonds élevés. Un
+usage collectif très intense peut malgré tout déclencher un refus temporaire :
+le message d'erreur le dit et invite à réessayer, sans jamais indiquer si le
+compte existe. Si ce cas se présentait réellement, la réponse ne serait pas de
+relever encore le plafond mais de cesser de compter par adresse — par exemple
+en freinant par identifiant visé plutôt que par origine.
 
 Le frein ne remplace pas un SMTP dédié. Il évite d'épuiser le quota par
 accident ou par abus ; il ne l'augmente pas. Le choix d'un fournisseur SMTP

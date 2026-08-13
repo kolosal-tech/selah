@@ -55,13 +55,16 @@ begin
     return false;
   end if;
 
-  -- Plafonds volontairement larges : ils arrêtent l'automatisation, pas la
-  -- personne qui se trompe deux fois de mot de passe. `signup` et
-  -- `password_reset` sont plus stricts parce qu'ils consomment un quota
-  -- d'e-mails partagé par tout le projet.
+  -- Une empreinte d'adresse est partagée par tous ceux qui sortent par le même
+  -- NAT : une église dont les membres se connectent depuis le même réseau lors
+  -- d'une rencontre est le cas nominal de ce produit, pas une attaque. Les
+  -- plafonds sont donc calibrés pour arrêter l'automatisation — un attaquant
+  -- reste à deux essais par minute — sans jamais fermer la porte à un groupe.
+  -- `password_reset` reste strict : le fournisseur d'e-mails intégré plafonne
+  -- lui-même à deux envois par heure pour tout le projet.
   case p_scope
-    when 'login' then max_requests := 12; window_seconds := 900;
-    when 'signup' then max_requests := 5; window_seconds := 3600;
+    when 'login' then max_requests := 30; window_seconds := 900;
+    when 'signup' then max_requests := 10; window_seconds := 3600;
     when 'password_reset' then max_requests := 3; window_seconds := 3600;
     else return false;
   end case;
