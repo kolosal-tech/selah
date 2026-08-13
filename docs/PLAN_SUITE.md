@@ -26,21 +26,29 @@ audit, implémentation, tests, migration, déploiement, preuve sur la cible.
 
 | # | Lot | Contenu | Source |
 |---|---|---|---|
-| A1 | Abonnements / Découvrir | Onglet du fil restreint aux auteurs suivis (la table `follows` est déjà lue), classement versionné avec nom de version exposé. Suivre un compte a enfin un effet visible. | Vague 3 ; F-018 ; ADR-0007 |
-| A2 | Protection de l'entrée Auth | Limitation d'inscription/connexion côté serveur (F-017), aujourd'hui absente devant Supabase. Réduit aussi l'exposition à la limite d'e-mails rencontrée au cycle 23. | F-017 ; state.md#Cycle 23 |
+| ~~A1~~ **livré 14/08** | Abonnements / Découvrir | Onglet du fil restreint aux auteurs suivis (la table `follows` est déjà lue), classement versionné avec nom de version exposé. Suivre un compte a enfin un effet visible. | Vague 3 ; F-018 ; ADR-0007 |
+| ~~A2~~ **livré 14/08** | Protection de l'entrée Auth | Limitation d'inscription/connexion côté serveur (F-017), aujourd'hui absente devant Supabase. Réduit aussi l'exposition à la limite d'e-mails rencontrée au cycle 23. | F-017 ; state.md#Cycle 23 |
 | A3 | Exercice de restauration PITR | Restauration réelle dans un environnement jetable, RPO/RTO mesurés, portée sur Storage constatée par écrit. Préalable exigé par quatre ADR ; la sauvegarde seule ne prouve rien. | RUNBOOK#Restauration ; ADR-0004/5/6 |
 | A4 | Studio créateur v1 | Brouillons, aperçu avant publication, programmation, séries. Statut `draft/scheduled` sur `videos` + déclencheur de publication. Sans fournisseur externe. | Vague 2 ; ROADMAP Phase 2 |
 | A5 | Onboarding par intention | Témoigner / prier / écouter / servir / rejoindre, toutes personnalisations sautables. | Vague 3 |
 | A6 | Notifications Web Push opt-in | VAPID (gratuit, sans FCM), consentement explicite, granularité par type, et le Mode Sabbat coupe enfin quelque chose de réel. | Vague 3 ; ROADMAP Phase 2 |
-| A7 | Élargir la QA navigateur | Projets Playwright WebKit/Safari + parcours clavier complets. | Critère global 4 |
+| ~~A7~~ **livré 14/08** | Élargir la QA navigateur | Projets Playwright WebKit/Safari + parcours clavier complets. | Critère global 4 |
 | A8 | Exploitation locale | Installer le job launchd d'alertes, étendre la sonde à Supabase (advisors, volume `product_events`, signalements > 24 h), planifier les purges si tu autorises `pg_cron`. | ALERTES.md ; state.md#Cycle 18 |
-| A9 | Dettes techniques | Unifier `profiles.lang`/`locale` (aucune des deux n'est lue), auditer puis valider la contrainte avatar `NOT VALID`, mesurer l'entrée audio réelle des rooms (`room_joined`), mettre à jour F-008. | inventaire code Q3/Q8 ; state.md#Cycle 16 |
+| ~~A9 partiel~~ **14/08** | Dettes techniques | Unifier `profiles.lang`/`locale` (aucune des deux n'est lue), auditer puis valider la contrainte avatar `NOT VALID`, mesurer l'entrée audio réelle des rooms (`room_joined`), mettre à jour F-008. | inventaire code Q3/Q8 ; state.md#Cycle 16 |
 | A10 | Baseline ASVS | Checklist OWASP ASVS 5 L2 versionnée + passe WSTG sur préproduction. | Critère global 2 |
 | A11 | MFA / passkey | Enrôlement TOTP optionnel si la configuration Supabase Auth le permet sans fragiliser les parcours actuels. | Vague 1 (reliquat) |
 | A12 | Fiches fournisseurs en service | Renseigner la grille ADR-0005 (région, DPA, coût, quota, portabilité, sortie) pour Supabase, Vercel et la traduction. Documentaire. | ADR-0005 |
 
-Recommandation de lancement : **A1 + A2** (produit + sécurité, immédiat),
-puis **A3** (elle conditionne trois ADR), puis A4–A6.
+**État au 14 août 2026.** A1, A2, A7 et la moitié d'A9 sont livrés et
+déployés (cycle 24 de `state.md`). L'ajout de WebKit a immédiatement révélé
+deux défauts invisibles sur Chromium — hydratation de `/signup` cassée sur
+Safari, et direction de l'offre WebRTC décidée par une comparaison dépendante
+du moteur — tous deux corrigés. Restent d'A9 : unifier `profiles.lang`/`locale`
+par une migration de nettoyage, valider la contrainte avatar `NOT VALID`,
+mettre à jour la ligne F-008 de `IMPLEMENTATION_STATUS.md`.
+
+Prochaine recommandation : **A3** (exercice de restauration PITR — elle
+conditionne quatre ADR), puis A4–A6.
 
 ## Piste B — tes décisions, regroupées en six paquets
 
