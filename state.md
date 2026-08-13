@@ -36,6 +36,64 @@ stables jusqu'à au moins 100 utilisateurs virtuels simultanés.
 
 ## Cycle courant
 
+Cycle 24 — piste A du plan de suite : Abonnements/Découvrir, frein d'entrée,
+couverture Safari et dettes techniques. Terminé le 14 août 2026.
+
+Abonnements. Suivre un compte n'avait aucun effet sur ce qu'on regarde. Deux
+onglets naviguent côté serveur, et le filtre `author_id` s'applique aussi à la
+pagination infinie — sans quoi le défilement aurait ramené des auteurs non
+suivis. Un état vide dédié invite à découvrir plutôt qu'à publier.
+
+Frein d'entrée (ADR-0014). L'adresse cliente n'entre jamais en base : seul un
+condensé SHA-256 poivré par le secret serveur circule, et les fenêtres
+s'effacent au bout de deux heures. Le frein est volontairement ouvert en cas de
+panne — un anti-abus qui fermerait l'authentification pendant un incident
+transformerait une gêne en indisponibilité.
+
+Deux défauts trouvés par la seule addition de WebKit, tous deux invisibles sur
+Chromium. D'abord `/signup` : `Intl.DisplayNames` et `localeCompare` s'appuient
+sur la table ICU du moteur, celle de Node ne coïncide pas avec celle de
+WebKit, et la liste des pays étant calculée dans un composant client, Safari
+recalculait des libellés et un ordre différents du rendu serveur — React
+refusait d'hydrater tout l'arbre (erreur #418). La liste est désormais rendue
+côté serveur. Ensuite, même cause dans les salles : la direction de l'offre
+WebRTC se décidait par `localeCompare` sur deux UUID, si bien que deux pairs
+sur des navigateurs différents pouvaient se croire tous deux initiateurs — ou
+aucun — et la salle serait restée muette sans erreur visible. Comparaison
+d'octets désormais, et un test interdit tout appel Intl dans un composant
+client.
+
+Incident de calibration. Le plafond de connexion initial (douze par quart
+d'heure) a été démenti le jour même : le harnais QA sur trois navigateurs
+depuis une seule machine l'a franchi. Le seuil était faux, pas le harnais — une
+église connectée au même réseau est un cas nominal. Recalibré à trente par
+quart d'heure et dix inscriptions par heure ; la réinitialisation reste à trois,
+c'est elle qui protège le quota d'e-mails. Les deux calibrations sont écrites
+dans ADR-0014, avec la suite à donner si le cas se représente : cesser de
+compter par adresse plutôt que relever encore le seuil.
+
+Dettes. `profiles.lang` était écrite à chaque changement de langue mais jamais
+lue — un membre ayant choisi le coréen retombait en français sur un appareil
+neuf ; `getLocale()` la consulte quand le cookie manque. `room_joined` mesure
+l'entrée réelle dans l'audio, là où `room_opened` ne mesurait que le rendu de
+la page.
+
+Preuves. Local : lint 0, tsc 0, 30 fichiers / 220 tests Vitest (200 au début du
+cycle), `RLS baseline: OK`, `Schema reconstruction: OK`, build 28 routes.
+Distant : migrations `20260814100000` et son recalibrage appliquées et
+vérifiées — zéro grant client sur `private.auth_throttle`, `room_joined`
+présent dans l'énum, jeton faux refusé, Security Advisor sans alerte de niveau
+WARN. Le frein a été observé actif en production, avec huit tentatives comptées
+sous l'ancien plafond. QA finale : 24 scénarios Playwright verts sur Chromium,
+Pixel 7 et WebKit contre `https://selah-wheat.vercel.app`.
+
+Limites du cycle. `private.purge_auth_throttle()` est livrée mais non planifiée
+— `pg_cron` reste une décision d'exploitation. Le lint échoue si des artefacts
+Playwright traînent dans le worktree : `eslint.config.mjs` ne les exclut pas et
+le garde-fou de configuration interdit de l'éditer ; les supprimer avant
+`pnpm lint` suffit. Le reste de la piste A (restauration PITR, studio créateur,
+onboarding, notifications) et toute la piste B restent ouverts.
+
 Cycle 22 — reprise autonome de la vague 1. Implémentation locale stable,
 préproduction distante en cours le 12 août 2026.
 
