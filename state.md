@@ -39,6 +39,18 @@ stables jusqu'à au moins 100 utilisateurs virtuels simultanés.
 Cycle 22 — reprise autonome de la vague 1. Implémentation locale stable,
 préproduction distante en cours le 12 août 2026.
 
+Cycle 23 — diagnostic du déblocage beta `norakologo@icloud.com`, le 13 août
+2026. Aucun mot de passe n'a été lu, affiché ou modifié, et aucun compte n'a
+été supprimé. La page de production a d'abord accepté une demande et redirigé
+vers `/forgot-password?info=accepted`. Une sonde directe vers Supabase
+`/auth/v1/recover`, avec la clé publique masquée, a ensuite répondu
+`429 / over_email_send_rate_limit / email rate limit exceeded`. Le message
+générique de l'écran correspond donc à une limite d'envoi du fournisseur
+d'emails, pas à un compte absent ou banni. Vercel reste READY et ses logs
+d'erreur des deux dernières heures sont vides. Le fournisseur intégré Supabase
+limite les emails à deux par heure par projet ; le SMTP personnalisé reste une
+décision de configuration externe et n'a pas été activé.
+
 Arbitrages. L'historique détaillé de décision n'a pas été retrouvé — l'index
 de connaissances répond exactement « je n'ai pas cette information en base ».
 Les trois choix protecteurs sont donc explicitement des hypothèses dans les
