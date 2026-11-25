@@ -46,7 +46,8 @@ export default async function Moderation() {
     redirect("/feed");
   }
 
-  const base = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/`;
+  const backend = process.env.NEXT_PUBLIC_SELAH_VPS_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const base = `${backend}/storage/v1/object/public/videos/`;
 
   const [{ data: signalements }, { data: masquees }, { data: dossiers }, { data: appeals }] = await Promise.all([
     supabase

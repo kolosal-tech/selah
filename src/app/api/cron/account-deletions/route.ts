@@ -8,8 +8,8 @@ type ClaimedDeletion = { request_id: string; user_id: string };
 type StorageEntry = { name: string; id?: string | null };
 
 function serviceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = process.env.NEXT_PUBLIC_SELAH_VPS_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SELAH_VPS_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }

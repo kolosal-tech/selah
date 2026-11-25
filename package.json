@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "node scripts/verifier-vps.mjs && next build --webpack",
     "build:turbo": "next build",
     "start": "next start",
     "lint": "eslint",
