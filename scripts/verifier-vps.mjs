@@ -46,7 +46,7 @@ async function main() {
     throw new Error("Auth Selah non vérifiée");
   }
   const fixture = process.env.SELAH_VPS_FIXTURE;
-  if (!fixture) {
+  if (process.env.SELAH_VPS_TEST_FIXTURE !== "1" || !fixture) {
     console.log("SELAH_VPS_BUILD_OK auth=true");
     return;
   }
